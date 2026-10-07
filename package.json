@@ -10,11 +10,18 @@
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
     "postinstall": "node scripts/copy-maplibre-worker.mjs",
-    "prepare": "husky"
+    "prepare": "husky",
+    "prettier": "npx prettier --write ."
   },
   "dependencies": {
+    "@dnd-kit/helpers": "^0.5.0",
+    "@dnd-kit/react": "^0.5.0",
     "@mantine/core": "^9.6.3",
+    "@mantine/dates": "^9.6.3",
     "@mantine/hooks": "^9.6.3",
+    "@mantine/notifications": "^9.6.3",
+    "@tabler/icons-react": "^3.48.0",
+    "dayjs": "^1.11.23",
     "maplibre-gl": "^6.11.2",
     "next": "16.3.8",
     "react": "19.2.8",
@@ -50,6 +57,6 @@
     "vitest": "^4"
   },
   "lint-staged": {
-    "**/*": "prettier --write --ignore-unknown"
+    "*.{js,jsx,ts,tsx,json,css,md,mdx,mjs}": "prettier --write"
   }
 }

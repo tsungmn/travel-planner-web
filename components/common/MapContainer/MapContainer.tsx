@@ -1,29 +1,31 @@
 "use client";
 
 import "maplibre-gl/dist/maplibre-gl.css";
-import classes from "./MapContainer.module.css";
+
+import { Center, Loader } from "@mantine/core";
 import { setWorkerUrl } from "maplibre-gl";
 import Map, {
   GeolocateControl,
-  MapProps,
-  MapRef,
   NavigationControl,
   ScaleControl,
 } from "react-map-gl/maplibre";
-import { ReactNode, Ref } from "react";
-import { StyleTransform } from "@/lib/transformStyle";
+import type { MapProps, MapRef } from "react-map-gl/maplibre";
+import type { ReactNode, Ref } from "react";
+
+import type { StyleTransform } from "@/lib/transformStyle";
 import { useMapStyle } from "@/hooks/useMapStyle";
 import {
   DEFAULT_MAP_STYLE,
   DEFAULT_STYLE_TRANSFORMS,
   DEFAULT_VIEW_STATE,
 } from "@/constants/map";
-import { Center, Loader } from "@mantine/core";
+import classes from "./MapContainer.module.css";
 
 setWorkerUrl("/maplibre-gl-worker.mjs");
 
 interface MapContainerProps {
   id?: string;
+  className?: string;
   mapStyle?: string;
   styleTransforms?: StyleTransform[];
   background?: string;
@@ -41,6 +43,7 @@ interface MapContainerProps {
 
 export function MapContainer({
   id,
+  className,
   mapStyle = DEFAULT_MAP_STYLE,
   styleTransforms = DEFAULT_STYLE_TRANSFORMS,
   background,
@@ -54,15 +57,6 @@ export function MapContainer({
 }: MapContainerProps) {
   const style = useMapStyle(mapStyle, styleTransforms);
 
-  // const userOnZoom = mapProps?.onZoom;
-  // const handleZoom = useCallback(
-  //   (e: ViewStateChangeEvent) => {
-  //     console.log("[MapContainer] zoom changed:", e.viewState.zoom);
-  //     userOnZoom?.(e);
-  //   },
-  //   [userOnZoom],
-  // );
-
   if (!style) {
     return (
       <Center h="100%">
@@ -73,7 +67,7 @@ export function MapContainer({
 
   return (
     <div
-      className={classes.root}
+      className={[classes.root, className].filter(Boolean).join(" ")}
       style={background ? { background } : undefined}
     >
       <Map
@@ -98,3 +92,5 @@ export function MapContainer({
     </div>
   );
 }
+
+export default MapContainer;

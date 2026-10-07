@@ -1,0 +1,64 @@
+.card {
+  cursor: pointer;
+  overflow: hidden;
+  transition:
+    transform 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--mantine-shadow-md);
+}
+
+.card:focus-visible {
+  outline: 2px solid var(--mantine-primary-color-filled);
+  outline-offset: 3px;
+}
+
+.past {
+  opacity: 0.72;
+}
+
+.cover {
+  position: relative;
+  display: flex;
+  min-height: 8rem;
+  align-items: flex-end;
+  padding: 1rem;
+}
+
+.destination {
+  color: white;
+  font-size: 1.5rem;
+  line-height: 1;
+  text-shadow: 0 1px 3px rgb(0 0 0 / 18%);
+}
+
+.menu {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+}
+
+.menuButton {
+  border: 0;
+  color: white;
+  background: rgb(255 255 255 / 20%);
+  backdrop-filter: blur(8px);
+}
+
+.menuButton:hover {
+  color: white;
+  background: rgb(255 255 255 / 30%);
+}
+
+@media (min-width: 48em) {
+  .cover {
+    min-height: 9rem;
+  }
+
+  .destination {
+    font-size: 1.875rem;
+  }
+}

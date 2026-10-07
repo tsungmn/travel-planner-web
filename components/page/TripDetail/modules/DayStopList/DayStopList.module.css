@@ -1,0 +1,13 @@
+.stopCard {
+  transition:
+    border-color 150ms ease,
+    box-shadow 150ms ease;
+}
+.stopCard:hover {
+  border-color: var(--mantine-color-teal-5);
+  box-shadow: var(--mantine-shadow-xs);
+}
+.flexible {
+  min-width: 0;
+  flex: 1;
+}

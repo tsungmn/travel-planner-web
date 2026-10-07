@@ -1,0 +1,49 @@
+.results {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.result {
+  display: block;
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid var(--mantine-color-default-border);
+  border-radius: var(--mantine-radius-md);
+  background: var(--mantine-color-body);
+  transition: background-color 150ms ease;
+}
+
+.result:hover {
+  background: var(--mantine-color-default-hover);
+}
+
+.result:focus-visible {
+  outline: 2px solid var(--mantine-primary-color-filled);
+  outline-offset: 2px;
+}
+
+.flexible {
+  flex: 1;
+  min-width: 0;
+}
+
+.placeIcon {
+  flex-shrink: 0;
+  color: var(--mantine-color-teal-6);
+}
+
+.selection {
+  background: var(--mantine-color-teal-light);
+  border-color: var(--mantine-color-teal-light-hover);
+}
+
+.mapFrame {
+  height: 12rem;
+  overflow: hidden;
+}
+
+.map {
+  width: 100%;
+  height: 100%;
+}

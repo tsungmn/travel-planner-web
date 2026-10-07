@@ -1,0 +1,43 @@
+.page {
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: var(--mantine-color-body);
+}
+
+.main {
+  padding-top: 2rem;
+  padding-bottom: 2.5rem;
+}
+
+.heading {
+  margin-bottom: 1.5rem;
+}
+
+.stateArea {
+  min-height: 28rem;
+  padding: 5rem 0;
+}
+
+.loadingCard {
+  overflow: hidden;
+  border: 1px solid var(--mantine-color-default-border);
+  border-radius: var(--mantine-radius-xl);
+  background: var(--mantine-color-body);
+}
+
+.emptyIllustration {
+  width: 7.5rem;
+  height: 7.5rem;
+}
+
+@media (min-width: 48em) {
+  .main {
+    padding-top: 2.5rem;
+    padding-bottom: 3rem;
+  }
+
+  .stateArea {
+    min-height: 32rem;
+    padding: 8rem 0;
+  }
+}

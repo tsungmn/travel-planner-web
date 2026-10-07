@@ -1,0 +1,24 @@
+.page {
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: var(--mantine-color-body);
+}
+.loading {
+  display: grid;
+  grid-template-columns: 25rem 1fr;
+  flex: 1;
+  gap: 1px;
+  background: var(--mantine-color-default-border);
+}
+.message {
+  min-height: calc(100vh - 3.5rem);
+}
+
+@media (max-width: 47.99em) {
+  .loading {
+    display: block;
+  }
+  .loading > :first-child {
+    display: none;
+  }
+}

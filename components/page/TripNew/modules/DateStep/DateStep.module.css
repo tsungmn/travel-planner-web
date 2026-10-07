@@ -1,0 +1,15 @@
+.calendar {
+  display: flex;
+  justify-content: center;
+  overflow-x: auto;
+}
+
+.selection {
+  background: var(--mantine-color-teal-light);
+  border-color: var(--mantine-color-teal-light-hover);
+}
+
+.placeIcon {
+  flex-shrink: 0;
+  color: var(--mantine-color-teal-6);
+}

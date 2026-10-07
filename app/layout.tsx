@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import "@mantine/core/styles.css";
+import "@mantine/dates/styles.css";
+import "@mantine/notifications/styles.css";
 import {
   ColorSchemeScript,
   MantineProvider,
@@ -8,7 +10,7 @@ import {
 import { theme } from "@/theme";
 
 export const metadata: Metadata = {
-  title: "Trip Planner",
+  title: "여행길",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

@@ -1,0 +1,18 @@
+.dayHeading {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0;
+  text-align: left;
+}
+.dayDot {
+  width: 0.5rem;
+  height: 0.5rem;
+  flex: 0 0 auto;
+  border-radius: 50%;
+}
+.flexible {
+  min-width: 0;
+  flex: 1;
+}
