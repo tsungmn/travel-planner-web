@@ -14,30 +14,40 @@ import classes from "./InfoSection.module.css";
 export function InfoSection({
   title,
   icon,
+  action,
+  defaultOpen = true,
   children,
 }: {
   title: string;
   icon: ReactNode;
+  /** 제목 줄 오른쪽에 둘 버튼. 접기/펼치기 버튼 바깥에 놓입니다. */
+  action?: ReactNode;
+  defaultOpen?: boolean;
   children: ReactNode;
 }) {
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(defaultOpen);
   return (
     <Paper withBorder radius="md" p="sm">
-      <UnstyledButton
-        className={classes.sectionTrigger}
-        onClick={() => setOpen((value) => !value)}
-      >
-        <Group gap="xs">
-          <ThemeIcon variant="light" color="teal" size="sm">
-            <span>{icon}</span>
-          </ThemeIcon>
-          <Text fw={600}>{title}</Text>
-        </Group>
-        <IconChevronDown
-          className={open ? classes.chevronOpen : ""}
-          size={18}
-        />
-      </UnstyledButton>
+      <Group gap="xs" wrap="nowrap">
+        <UnstyledButton
+          className={classes.sectionTrigger}
+          aria-expanded={open}
+          onClick={() => setOpen((value) => !value)}
+        >
+          <Group gap="xs">
+            <ThemeIcon variant="light" color="teal" size="sm">
+              <span>{icon}</span>
+            </ThemeIcon>
+            <Text fw={600}>{title}</Text>
+          </Group>
+          <IconChevronDown
+            className={open ? classes.chevronOpen : classes.chevron}
+            size={18}
+            aria-hidden="true"
+          />
+        </UnstyledButton>
+        {action}
+      </Group>
       <Collapse expanded={open}>
         <Box pt="sm">{children}</Box>
       </Collapse>

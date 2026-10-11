@@ -13,19 +13,44 @@ import {
   MenuLabel,
   Text,
   UnstyledButton,
+  Container,
 } from "@mantine/core";
+import { notifications } from "@mantine/notifications";
 import { IconChevronDown, IconLogout, IconMapPin } from "@tabler/icons-react";
 
-import { mockUser } from "@/mocks/data";
+import { logout } from "@/lib/auth";
 import classes from "./Header.module.css";
 
-export function Header() {
+interface HeaderProps {
+  userName?: string;
+  userEmail?: string;
+  fluid?: boolean;
+}
+
+export function Header({
+  userName = "",
+  userEmail = "",
+  fluid = false,
+}: HeaderProps) {
   const router = useRouter();
-  const initial = mockUser.name.charAt(0).toUpperCase();
+  const initial = userName.charAt(0).toUpperCase() || undefined;
+  const hasUser = userName !== "" || userEmail !== "";
+
+  async function handleLogout() {
+    try {
+      await logout();
+      router.push("/login");
+    } catch {
+      notifications.show({
+        color: "red",
+        message: "로그아웃하지 못했어요. 잠시 후 다시 시도해 주세요.",
+      });
+    }
+  }
 
   return (
     <Box component="header" className={classes.header}>
-      <Box className={classes.inner}>
+      <Container size="lg" className={classes.inner} fluid={fluid}>
         <UnstyledButton
           className={classes.logo}
           onClick={() => router.push("/trips")}
@@ -50,20 +75,24 @@ export function Header() {
             </UnstyledButton>
           </MenuTarget>
           <MenuDropdown w={224}>
-            <MenuLabel>
-              <StackLabel name={mockUser.name} email={mockUser.email} />
-            </MenuLabel>
-            <MenuDivider />
+            {hasUser && (
+              <>
+                <MenuLabel>
+                  <StackLabel name={userName} email={userEmail} />
+                </MenuLabel>
+                <MenuDivider />
+              </>
+            )}
             <MenuItem
               color="red"
               leftSection={<IconLogout size={16} aria-hidden="true" />}
-              onClick={() => router.push("/login")}
+              onClick={handleLogout}
             >
               로그아웃
             </MenuItem>
           </MenuDropdown>
         </Menu>
-      </Box>
+      </Container>
     </Box>
   );
 }

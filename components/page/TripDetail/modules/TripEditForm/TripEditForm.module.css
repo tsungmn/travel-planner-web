@@ -1,0 +1,8 @@
+.summary {
+  background: var(--mantine-color-default-hover);
+}
+.calendar {
+  display: flex;
+  justify-content: center;
+  overflow-x: auto;
+}

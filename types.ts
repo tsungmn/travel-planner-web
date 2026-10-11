@@ -11,12 +11,26 @@ export type Trip = {
   stop_count: number;
 };
 
+/** 공유 링크로 내려오는 여행. 소유자 전용 필드(id, share_token)는 없습니다. */
+export type TripPublic = Pick<
+  Trip,
+  | "title"
+  | "destination"
+  | "dest_lat"
+  | "dest_lng"
+  | "start_date"
+  | "end_date"
+  | "num_days"
+>;
+
 export type Stop = {
   id: string;
   trip_id: string;
   day_index: number;
   sort_order: number;
   name: string;
+  /** 사용자가 정한 표시 이름. 있으면 `name` 대신 보여주고 `name`은 작게 덧붙입니다. */
+  alias: string | null;
   address_text: string | null;
   lat: number;
   lng: number;

@@ -1,0 +1,11 @@
+.date {
+  min-width: 0;
+  flex: 1;
+}
+.time {
+  width: 7.5rem;
+  flex-shrink: 0;
+}
+.summary {
+  background: var(--mantine-color-default-hover);
+}

@@ -1,93 +1,131 @@
 .page {
-  min-height: 100vh;
-  min-height: 100dvh;
+  display: flex;
+  height: 100vh;
+  height: 100dvh;
+  flex-direction: column;
+  overflow: hidden;
   background: var(--mantine-color-body);
 }
+
 .workspace {
   position: relative;
   display: flex;
-  height: calc(100vh - 3.5rem);
+  min-height: 0;
+  flex: 1;
   overflow: hidden;
 }
-.mapPane {
-  position: relative;
-  flex: 1;
-  min-width: 0;
-}
-.map {
-  width: 100%;
-  height: 100%;
-}
+
+/* 패널이 DOM에서 지도보다 앞에 있어 데스크톱에서는 왼쪽에 놓이고, 키보드 탭 순서도 패널이 먼저입니다. */
 .panel {
+  position: relative;
   z-index: 3;
+  display: flex;
   width: 25rem;
+  min-height: 0;
   flex-shrink: 0;
+  flex-direction: column;
   overflow: hidden;
   border-right: 1px solid var(--mantine-color-default-border);
   background: var(--mantine-color-body);
 }
-.panelScroll {
+
+.panelBody {
+  position: relative;
+  min-height: 0;
+  flex: 1;
+}
+
+.panelMain {
   height: 100%;
 }
-.flexible {
+
+/* 서브 화면은 메인 패널 위에 덮입니다. 지도를 가리지 않도록 패널 안에서만 열립니다. */
+.subScreen {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  background: var(--mantine-color-body);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .subScreen {
+    animation: slideInRight 200ms ease-out;
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(1rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.mapPane {
+  position: relative;
   min-width: 0;
   flex: 1;
 }
-.dayTabs {
-  flex-wrap: nowrap;
-  overflow-x: auto;
-}
-.dayDot {
-  width: 0.5rem;
-  height: 0.5rem;
-  flex: 0 0 auto;
-  border-radius: 50%;
-}
-.dimmedMarker {
-  opacity: 0.35;
-}
-.mobileHandle {
+
+.handle {
   display: none;
 }
 
 @media (max-width: 47.99em) {
-  .workspace {
-    height: calc(100vh - 3.5rem);
-  }
   .mapPane {
     position: absolute;
     inset: 0;
   }
+
   .panel {
     position: absolute;
+    z-index: 20;
     right: 0;
     bottom: 0;
     left: 0;
     width: auto;
-    height: 56%;
     border-top: 1px solid var(--mantine-color-default-border);
     border-right: 0;
     border-radius: 1rem 1rem 0 0;
     box-shadow: var(--mantine-shadow-lg);
-    transition: height 180ms ease;
+    transition: height 300ms ease;
   }
-  .panel:not(.mobilePanelOpen) {
-    height: 5.5rem;
+
+  /* 높이는 hooks/useBottomSheet.ts의 SHEET_* 상수와 같아야 합니다. */
+  .panel[data-snap="0"] {
+    height: 6rem;
   }
-  .mobileHandle {
+  .panel[data-snap="1"] {
+    height: 50%;
+  }
+  .panel[data-snap="2"] {
+    height: 92%;
+  }
+
+  .handle {
     display: flex;
-    height: 2rem;
+    width: 100%;
+    flex-shrink: 0;
     align-items: center;
     justify-content: center;
-    cursor: pointer;
+    padding: 0.5rem 0 0.25rem;
+    border: 0;
+    background: transparent;
+    cursor: grab;
+    touch-action: none;
   }
-  .mobileHandle span {
+
+  .handle:active {
+    cursor: grabbing;
+  }
+
+  .handle span {
     width: 2.5rem;
     height: 0.375rem;
     border-radius: 999px;
     background: var(--mantine-color-gray-4);
-  }
-  .panel:not(.mobilePanelOpen) .panelScroll {
-    overflow: hidden;
   }
 }

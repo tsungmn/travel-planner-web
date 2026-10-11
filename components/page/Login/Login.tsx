@@ -4,13 +4,14 @@ import { Suspense } from "react";
 import Link from "next/link";
 import {
   Button,
+  Collapse,
   Divider,
   Loader,
   PasswordInput,
   SegmentedControl,
   TextInput,
 } from "@mantine/core";
-import { IconBrandGoogle, IconEye, IconEyeOff } from "@tabler/icons-react";
+import { IconEye, IconEyeOff } from "@tabler/icons-react";
 
 import {
   AUTH_NAME_MAX_LENGTH,
@@ -22,6 +23,7 @@ import {
 import { LoginHero } from "@/components/common/LoginHero";
 import { useAuthForm } from "./hooks/useAuthForm";
 import { AuthAlerts } from "./modules/AuthAlerts";
+import { GoogleIcon } from "./modules/GoogleIcon";
 import classes from "./Login.module.css";
 
 const FIELD_ERROR_MESSAGES: Record<AuthFieldError, string> = {
@@ -98,27 +100,29 @@ function LoginContent() {
             noValidate
             aria-busy={submitting}
           >
-            {isSignup && (
-              <TextInput
-                id="name"
-                name="name"
-                label={
-                  <>
-                    이름 <span className={classes.optional}>(선택)</span>
-                  </>
-                }
-                autoComplete="name"
-                maxLength={AUTH_NAME_MAX_LENGTH}
-                placeholder="여행자"
-                value={values.name}
-                disabled={submitting}
-                error={fieldError("name")}
-                onChange={(event) =>
-                  form.changeField("name", event.currentTarget.value)
-                }
-                classNames={{ input: classes.input, label: classes.label }}
-              />
-            )}
+            <Collapse expanded={isSignup}>
+              <div className={classes.nameField}>
+                <TextInput
+                  id="name"
+                  name="name"
+                  label={
+                    <>
+                      이름 <span className={classes.optional}>(선택)</span>
+                    </>
+                  }
+                  autoComplete="name"
+                  maxLength={AUTH_NAME_MAX_LENGTH}
+                  placeholder="여행자"
+                  value={values.name}
+                  disabled={submitting}
+                  error={fieldError("name")}
+                  onChange={(event) =>
+                    form.changeField("name", event.currentTarget.value)
+                  }
+                  classNames={{ input: classes.input, label: classes.label }}
+                />
+              </div>
+            </Collapse>
 
             <TextInput
               id="email"
@@ -142,6 +146,7 @@ function LoginContent() {
             <PasswordInput
               id="password"
               name="password"
+              mt="md"
               label="비밀번호"
               placeholder={
                 isSignup
@@ -179,11 +184,11 @@ function LoginContent() {
                 visibilityToggle: classes.visibilityToggle,
               }}
             />
-            {isSignup && !form.fieldErrors.password && (
+            <Collapse expanded={isSignup && !form.fieldErrors.password}>
               <p className={classes.passwordHint}>
                 {AUTH_PASSWORD_MIN_LENGTH}자 이상
               </p>
-            )}
+            </Collapse>
 
             <Button
               type="submit"
@@ -192,11 +197,13 @@ function LoginContent() {
               disabled={submitting}
               className={classes.submitButton}
             >
-              {submitting
-                ? "처리 중..."
-                : isSignup
-                  ? "가입하고 시작하기"
-                  : "로그인"}
+              {submitting ? (
+                "처리 중..."
+              ) : (
+                <span key={mode} className={classes.submitLabel}>
+                  {isSignup ? "가입하고 시작하기" : "로그인"}
+                </span>
+              )}
             </Button>
           </form>
 
@@ -211,7 +218,7 @@ function LoginContent() {
             fullWidth
             variant="default"
             disabled={submitting}
-            leftSection={<IconBrandGoogle size={20} aria-hidden="true" />}
+            leftSection={<GoogleIcon />}
             onClick={form.handleGoogle}
             className={classes.googleButton}
           >

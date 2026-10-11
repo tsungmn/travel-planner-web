@@ -46,11 +46,16 @@
   border-radius: 0.5rem;
 }
 
+/* 이름 입력란이 접히고 펼쳐질 때 간격이 튀지 않도록 gap 대신 개별 margin을 씁니다. */
 .form {
   display: flex;
   flex-direction: column;
   gap: 1rem;
   margin-top: 1.25rem;
+}
+
+.nameField {
+  padding-bottom: 1rem;
 }
 
 .label {
@@ -87,7 +92,7 @@
 }
 
 .passwordHint {
-  margin: -0.625rem 0 0;
+  margin: 0.375rem 0 0;
   color: var(--mantine-color-dimmed);
   font-size: 0.75rem;
 }
@@ -100,8 +105,31 @@
 }
 
 .submitButton {
-  margin-top: 0.5rem;
+  margin-top: 1.5rem;
   font-weight: 600;
+}
+
+.submitLabel {
+  display: inline-block;
+  animation: submitLabelIn 200ms ease-out;
+}
+
+@keyframes submitLabelIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .submitLabel {
+    animation: none;
+  }
 }
 
 .googleButton {

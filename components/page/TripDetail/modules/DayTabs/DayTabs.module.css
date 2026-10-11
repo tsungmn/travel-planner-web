@@ -1,0 +1,16 @@
+.list {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+}
+.dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  flex: 0 0 auto;
+  border-radius: 50%;
+}
+.label {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  line-height: 1.25;
+}

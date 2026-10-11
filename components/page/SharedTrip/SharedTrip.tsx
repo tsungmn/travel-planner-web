@@ -1,0 +1,277 @@
+"use client";
+
+import {
+  Suspense,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import Link from "next/link";
+import { Box, Button } from "@mantine/core";
+import { useElementSize, useMediaQuery } from "@mantine/hooks";
+import { IconAlertCircle } from "@tabler/icons-react";
+
+import type { Flight, Lodging, Stop, TripPublic } from "@/types";
+import { getSharedTrip } from "@/lib/api";
+import { useAirports } from "@/lib/airports";
+import {
+  buildFlightStops,
+  isAirportMarkerId,
+  type FlightStop,
+} from "@/lib/flightStops";
+import {
+  getSheetHeight,
+  useBottomSheet,
+} from "@/components/page/TripDetail/hooks/useBottomSheet";
+import { useDetailRoute } from "@/components/page/TripDetail/hooks/useDetailRoute";
+import {
+  DetailLoading,
+  DetailMessage,
+} from "@/components/page/TripDetail/modules/DetailState";
+import {
+  TripMap,
+  type FlyTarget,
+  type MapInsets,
+} from "@/components/page/TripDetail/modules/TripMap";
+import { SharePanel } from "./modules/SharePanel";
+import { ShareTopBar } from "./modules/ShareTopBar";
+import classes from "./SharedTrip.module.css";
+
+type TripData = {
+  trip: TripPublic;
+  stops: Stop[];
+  lodgings: Lodging[];
+  flights: Flight[];
+};
+
+/** 데스크톱 왼쪽 패널 너비(px). SharedTrip.module.css의 .panel 너비(25rem)와 같아야 합니다. */
+const PANEL_WIDTH_PX = 400;
+const MAP_MARGIN_PX = 24;
+const FOCUS_ZOOM = 14;
+const AIRPORT_FOCUS_ZOOM = 11;
+
+// 읽기 전용이라 지도를 눌러도 할 일이 없습니다.
+const noop = () => {};
+
+export function SharedTripClient({ token }: { token: string }) {
+  return (
+    <Suspense fallback={<DetailLoading header={<ShareTopBar />} />}>
+      <SharedTripContent key={token} token={token} />
+    </Suspense>
+  );
+}
+
+function SharedTripContent({ token }: { token: string }) {
+  const route = useDetailRoute();
+  const isDesktop = useMediaQuery("(min-width: 48em)");
+  const { ref: workspaceRef, height: workspaceHeight } =
+    useElementSize<HTMLDivElement>();
+  const sheetRef = useRef<HTMLElement | null>(null);
+  const sheet = useBottomSheet(sheetRef, workspaceHeight);
+
+  const [data, setData] = useState<TripData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+
+  const [expandedStopId, setExpandedStopId] = useState<string | null>(null);
+  const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const [highlightedMarkerId, setHighlightedMarkerId] = useState<string | null>(
+    null,
+  );
+  const [flyTo, setFlyTo] = useState<FlyTarget | null>(null);
+
+  const pendingScrollId = useRef<string | null>(null);
+  const stopListRef = useRef<HTMLDivElement>(null);
+
+  // ----- 데이터 불러오기 -----
+
+  // setState는 모두 Promise 콜백 안에서만 호출해 effect 안에서 동기 호출하지 않습니다.
+  const fetchTrip = useCallback(
+    () =>
+      getSharedTrip(token)
+        .then(setData)
+        .catch(() => setError(true))
+        .finally(() => setLoading(false)),
+    [token],
+  );
+
+  useEffect(() => {
+    fetchTrip();
+  }, [fetchTrip]);
+
+  function retry() {
+    setLoading(true);
+    setError(false);
+    fetchTrip();
+  }
+
+  // 마커 강조는 잠깐만 보여줍니다.
+  useEffect(() => {
+    if (!highlightedMarkerId) return;
+    const timer = setTimeout(() => setHighlightedMarkerId(null), 2000);
+    return () => clearTimeout(timer);
+  }, [highlightedMarkerId]);
+
+  // 마커를 눌러 일차가 바뀌고 카드가 펼쳐진 뒤에 그 카드로 스크롤합니다.
+  useEffect(() => {
+    const target = pendingScrollId.current;
+    if (!target) return;
+    const element = stopListRef.current?.querySelector(
+      `[data-stop-id="${target}"]`,
+    );
+    if (!element) return;
+    pendingScrollId.current = null;
+    element.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [expandedStopId, route.selectedDay, data]);
+
+  // 항공편이 있을 때만 공항 목록을 불러와, 출발·도착 공항을 일정에 붙입니다.
+  const airports = useAirports({ enabled: (data?.flights.length ?? 0) > 0 });
+  const airportIndex = airports.index;
+  const flightStops = useMemo(
+    () =>
+      data && airportIndex
+        ? buildFlightStops(data.trip, data.flights, airportIndex.byIata)
+        : [],
+    [data, airportIndex],
+  );
+
+  // ----- 화면 상태 계산 -----
+
+  const selectedDay =
+    route.selectedDay !== null && data && route.selectedDay < data.trip.num_days
+      ? route.selectedDay
+      : null;
+
+  const insets: MapInsets = isDesktop
+    ? {
+        top: MAP_MARGIN_PX,
+        right: MAP_MARGIN_PX,
+        bottom: MAP_MARGIN_PX,
+        left: PANEL_WIDTH_PX + MAP_MARGIN_PX,
+      }
+    : {
+        top: MAP_MARGIN_PX,
+        right: MAP_MARGIN_PX,
+        bottom: getSheetHeight(sheet.snap, workspaceHeight) + MAP_MARGIN_PX,
+        left: MAP_MARGIN_PX,
+      };
+
+  // ----- 지도 ↔ 목록 -----
+
+  function handleFocusLodging(lodging: Lodging) {
+    setFlyTo({ lng: lodging.lng, lat: lodging.lat, zoom: FOCUS_ZOOM });
+    setHighlightedMarkerId(`lodging-${lodging.id}`);
+  }
+
+  function handleFocusFlightStop(stop: FlightStop) {
+    setFlyTo({ lng: stop.lng, lat: stop.lat, zoom: AIRPORT_FOCUS_ZOOM });
+    setHighlightedMarkerId(stop.markerId);
+  }
+
+  function handleMarkerClick(markerId: string) {
+    setHighlightedMarkerId(markerId);
+    if (markerId.startsWith("lodging-") || isAirportMarkerId(markerId)) return;
+
+    const stop = data?.stops.find((s) => s.id === markerId);
+    if (!stop) return;
+    if (selectedDay !== stop.day_index) route.setDay(stop.day_index);
+    setExpandedStopId(markerId);
+    pendingScrollId.current = markerId;
+    // 시트가 접혀 있으면 카드가 보이도록 펼칩니다.
+    sheet.setSnap((snap) => (snap === 0 ? 1 : snap));
+  }
+
+  // ----- 렌더 -----
+
+  if (loading) return <DetailLoading header={<ShareTopBar />} />;
+  if (error)
+    return (
+      <DetailMessage
+        header={<ShareTopBar />}
+        icon={<IconAlertCircle size={36} />}
+        title="여행을 불러오지 못했어요."
+        action={<Button onClick={retry}>다시 시도</Button>}
+      />
+    );
+  if (!data)
+    return (
+      <DetailMessage
+        header={<ShareTopBar />}
+        title="공유가 중단되었거나 링크를 찾을 수 없어요"
+        description="링크가 만료되었거나 여행 공유가 꺼졌을 수 있어요."
+        action={
+          <Button component={Link} href="/" variant="default">
+            홈으로
+          </Button>
+        }
+      />
+    );
+
+  const { trip, stops, lodgings, flights } = data;
+
+  return (
+    <Box className={classes.page}>
+      <ShareTopBar />
+      <Box ref={workspaceRef} className={classes.workspace}>
+        {/* 데스크톱: 왼쪽 패널 / 모바일: 지도 위로 올라오는 바텀시트 */}
+        <Box
+          component="aside"
+          ref={sheetRef}
+          className={classes.panel}
+          data-snap={sheet.snap}
+        >
+          <button
+            type="button"
+            className={classes.handle}
+            aria-label="패널 크기 조절"
+            {...sheet.handleProps}
+          >
+            <span />
+          </button>
+          <Box className={classes.panelBody}>
+            <SharePanel
+              trip={trip}
+              stops={stops}
+              lodgings={lodgings}
+              flights={flights}
+              flightStops={flightStops}
+              selectedDay={selectedDay}
+              expandedStopId={expandedStopId}
+              hoveredStopId={hoveredId}
+              listRef={stopListRef}
+              onSelectDay={route.setDay}
+              onToggleStop={(stopId) =>
+                setExpandedStopId((current) =>
+                  current === stopId ? null : stopId,
+                )
+              }
+              onHoverStop={setHoveredId}
+              onFocusLodging={handleFocusLodging}
+              onFocusFlightStop={handleFocusFlightStop}
+            />
+          </Box>
+        </Box>
+
+        <Box className={classes.mapPane}>
+          <TripMap
+            trip={trip}
+            stops={stops}
+            lodgings={lodgings}
+            flightStops={flightStops}
+            selectedDay={selectedDay}
+            hoveredId={hoveredId}
+            highlightedId={highlightedMarkerId}
+            preview={null}
+            flyTo={flyTo}
+            insets={insets}
+            pickMode={false}
+            onMarkerClick={handleMarkerClick}
+            onMapClick={noop}
+          />
+        </Box>
+      </Box>
+    </Box>
+  );
+}

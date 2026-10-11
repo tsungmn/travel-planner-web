@@ -77,16 +77,17 @@ export function MapContainer({
         mapStyle={style}
         initialViewState={initialViewState}
         style={{ width: "100%", height: "100%" }}
+        attributionControl={false}
       >
-        {showNavigation && <NavigationControl position="top-right" />}
+        {showScale && <ScaleControl position="bottom-right" />}
+        {showNavigation && <NavigationControl position="bottom-right" />}
         {showGeolocate && (
           <GeolocateControl
-            position="top-right"
+            position="bottom-right"
             trackUserLocation
             positionOptions={{ enableHighAccuracy: true }}
           />
         )}
-        {showScale && <ScaleControl position="bottom-left" />}
         {children}
       </Map>
     </div>

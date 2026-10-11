@@ -1,0 +1,8 @@
+.shareOn {
+  border-color: var(--mantine-color-teal-4);
+  color: var(--mantine-color-teal-7);
+}
+.url {
+  min-width: 0;
+  flex: 1;
+}

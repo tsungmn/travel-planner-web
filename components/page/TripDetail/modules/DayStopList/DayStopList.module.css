@@ -1,11 +1,38 @@
 .stopCard {
   transition:
     border-color 150ms ease,
-    box-shadow 150ms ease;
+    box-shadow 150ms ease,
+    background-color 150ms ease;
 }
-.stopCard:hover {
+.stopCard:hover,
+.stopCard[data-hovered],
+.stopCard[data-expanded] {
   border-color: var(--mantine-color-teal-5);
   box-shadow: var(--mantine-shadow-xs);
+}
+.stopCard[data-highlighted] {
+  border-color: var(--mantine-color-teal-5);
+  background: var(--mantine-color-teal-light);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .stopCard[data-highlighted] {
+    animation: highlightFade 1500ms ease-out;
+  }
+}
+@keyframes highlightFade {
+  from {
+    background: var(--mantine-color-teal-light-hover);
+  }
+  to {
+    background: var(--mantine-color-teal-light);
+  }
+}
+.handle {
+  cursor: grab;
+  touch-action: none;
+}
+.handle:active {
+  cursor: grabbing;
 }
 .flexible {
   min-width: 0;

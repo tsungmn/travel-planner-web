@@ -7,6 +7,7 @@ import {
   MantineProvider,
   mantineHtmlProps,
 } from "@mantine/core";
+import { Notifications } from "@mantine/notifications";
 import { theme } from "@/theme";
 
 export const metadata: Metadata = {
@@ -20,7 +21,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <ColorSchemeScript />
       </head>
       <body>
-        <MantineProvider theme={theme}>{children}</MantineProvider>
+        <MantineProvider theme={theme}>
+          <Notifications position="top-right" />
+          {children}
+        </MantineProvider>
       </body>
     </html>
   );

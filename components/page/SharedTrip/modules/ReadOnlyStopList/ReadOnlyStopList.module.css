@@ -1,0 +1,32 @@
+/* DayStopList.module.css의 .stopCard와 같은 강조 규칙을 씁니다. */
+.stopCard {
+  transition:
+    border-color 150ms ease,
+    box-shadow 150ms ease,
+    background-color 150ms ease;
+}
+.stopCard:hover,
+.stopCard[data-hovered],
+.stopCard[data-expanded] {
+  border-color: var(--mantine-color-teal-5);
+  box-shadow: var(--mantine-shadow-xs);
+}
+.trigger {
+  width: 100%;
+  text-align: left;
+  cursor: default;
+}
+.trigger[data-expandable] {
+  cursor: pointer;
+}
+.flexible {
+  min-width: 0;
+  flex: 1;
+}
+.memo {
+  padding-top: 0.5rem;
+  margin-top: 0.5rem;
+  border-top: 1px solid var(--mantine-color-default-border);
+  line-height: 1.6;
+  white-space: pre-wrap;
+}

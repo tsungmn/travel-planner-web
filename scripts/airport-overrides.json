@@ -1,0 +1,45 @@
+{
+  "CEB": {
+    "name_ko": "막탄세부 국제공항",
+    "city_ko": "세부",
+    "aliases": ["세부", "막탄", "막탄세부"]
+  },
+  "PPS": {
+    "name_ko": "푸에르토프린세사 공항",
+    "city_ko": "푸에르토프린세사",
+    "aliases": ["팔라완"]
+  },
+  "PPT": {
+    "name_ko": "파아아 국제공항",
+    "city_ko": "파페에테",
+    "aliases": ["타히티"]
+  },
+  "OGG": {
+    "name_ko": "카훌루이 공항",
+    "city_ko": "카훌루이",
+    "aliases": ["마우이"]
+  },
+  "LIH": {
+    "name_ko": "리후에 공항",
+    "city_ko": "리후에",
+    "aliases": ["카우아이"]
+  },
+  "GAN": { "name_ko": "간 국제공항", "city_ko": "아두", "aliases": ["몰디브"] },
+  "GOI": {
+    "name_ko": "다볼림 공항",
+    "city_ko": "고아",
+    "aliases": ["고아", "다볼림"]
+  },
+  "COV": { "city_ko": "아다나", "aliases": ["아다나", "메르신"] },
+  "BEL": { "city_ko": "벨렝", "aliases": ["벨렝", "벨렘"] },
+  "BJV": { "name_ko": "밀라스보드룸 국제공항", "city_ko": "보드룸" },
+  "DLM": { "name_ko": "달라만 국제공항", "city_ko": "달라만" },
+  "JMK": { "name_ko": "미코노스 공항", "city_ko": "미코노스" },
+  "BGO": { "name_ko": "베르겐 플레스란 공항", "city_ko": "베르겐" },
+  "PIT": { "name_ko": "피츠버그 국제공항", "city_ko": "피츠버그" },
+  "MKE": { "name_ko": "밀워키 제너럴 미첼 국제공항" },
+  "BUR": { "name_ko": "밥 호프 공항" },
+  "DJT": { "city_ko": "웨스트팜비치", "aliases": ["팜비치"] },
+  "HBE": { "city_ko": "알렉산드리아" },
+  "PMC": { "city_ko": "푸에르토몬트" }
+}

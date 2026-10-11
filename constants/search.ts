@@ -1,1 +1,2 @@
 export const PLACE_SEARCH_DEBOUNCE_MS = 350;
+export const NEARBY_SEARCH_RADIUS_KM = 50;

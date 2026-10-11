@@ -25,10 +25,13 @@ import {
 import type { Trip } from "@/types";
 import classes from "./TripCard.module.css";
 import { formatPeriod } from "@/lib/date";
+import { deleteTrip } from "@/lib/api";
+import { ApiError } from "@/lib/http";
 
 type TripCardProps = {
   trip: Trip;
   past?: boolean;
+  onDeleted?: (tripId: string) => void;
 };
 
 const COVER_GRADIENTS: Record<string, string> = {
@@ -45,20 +48,51 @@ function getGradient(destination: string): string {
   );
 }
 
-export function TripCard({ trip, past = false }: TripCardProps) {
+function deleteErrorMessage(error: unknown): string {
+  if (error instanceof ApiError && error.code === "network_error") {
+    return "네트워크에 연결할 수 없어요. 연결을 확인해 주세요.";
+  }
+  return "여행을 삭제하지 못했어요. 잠시 후 다시 시도해 주세요.";
+}
+
+export function TripCard({ trip, past = false, onDeleted }: TripCardProps) {
   const router = useRouter();
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   function openTrip() {
     router.push(`/trips/${trip.id}`);
   }
 
-  function handleDelete() {
+  function closeDeleteModal() {
+    // 삭제 요청이 진행 중일 때는 닫지 않습니다.
+    if (!deleting) setDeleteOpen(false);
+  }
+
+  async function handleDelete() {
+    if (deleting) return;
+    setDeleting(true);
+    let removed = false;
+    try {
+      await deleteTrip(trip.id);
+      removed = true;
+    } catch (error) {
+      // 404: 다른 탭이나 기기에서 이미 지운 여행이라 목록에서만 치우면 됩니다.
+      if (error instanceof ApiError && error.status === 404) {
+        removed = true;
+      } else {
+        notifications.show({
+          message: deleteErrorMessage(error),
+          color: "red",
+        });
+      }
+    } finally {
+      setDeleting(false);
+    }
+    if (!removed) return;
     setDeleteOpen(false);
-    notifications.show({
-      message: "여행을 삭제했어요.",
-      color: "teal",
-    });
+    onDeleted?.(trip.id);
+    notifications.show({ message: "여행을 삭제했어요.", color: "teal" });
   }
 
   return (
@@ -71,6 +105,8 @@ export function TripCard({ trip, past = false }: TripCardProps) {
         shadow="sm"
         onClick={openTrip}
         onKeyDown={(event) => {
+          // 메뉴 버튼과 메뉴 항목(포털)에서 올라온 키 입력은 무시합니다.
+          if (event.target !== event.currentTarget) return;
           if (event.key === "Enter" || event.key === " ") {
             event.preventDefault();
             openTrip();
@@ -80,7 +116,7 @@ export function TripCard({ trip, past = false }: TripCardProps) {
         tabIndex={0}
       >
         <Box
-          className={classes.cover}
+          className={`${classes.cover} ${past ? classes.pastCover : ""}`}
           style={{ background: getGradient(trip.destination) }}
         >
           <Text className={classes.destination} component="span" fw={700}>
@@ -150,7 +186,7 @@ export function TripCard({ trip, past = false }: TripCardProps) {
 
       <Modal
         opened={deleteOpen}
-        onClose={() => setDeleteOpen(false)}
+        onClose={closeDeleteModal}
         centered
         radius="xl"
         title={`‘${trip.title}’을 삭제할까요?`}
@@ -162,7 +198,8 @@ export function TripCard({ trip, past = false }: TripCardProps) {
           <Button
             variant="default"
             radius="xl"
-            onClick={() => setDeleteOpen(false)}
+            onClick={closeDeleteModal}
+            disabled={deleting}
           >
             취소
           </Button>
@@ -170,6 +207,7 @@ export function TripCard({ trip, past = false }: TripCardProps) {
             color="red"
             radius="xl"
             onClick={handleDelete}
+            loading={deleting}
             leftSection={<IconTrash size={16} />}
           >
             삭제

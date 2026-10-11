@@ -1,7 +1,13 @@
 import { SubmitEvent, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
-import { AuthError, login, signup, type AuthErrorCode } from "@/lib/auth";
+import {
+  AuthError,
+  GOOGLE_LOGIN_URL,
+  login,
+  signup,
+  type AuthErrorCode,
+} from "@/lib/auth";
 import {
   validateAuth,
   type AuthField,
@@ -81,8 +87,8 @@ export function useAuthForm() {
 
   function handleGoogle() {
     if (submittingRef.current) return;
-    // TODO: 실제 Google OAuth 시작 URL로 교체하세요. 현재는 원본의 이동 동작입니다.
-    router.push("/trips");
+    // OAuth 상태 쿠키를 받아야 하므로 router.push가 아니라 전체 페이지 이동을 씁니다.
+    window.location.assign(GOOGLE_LOGIN_URL);
   }
 
   return {

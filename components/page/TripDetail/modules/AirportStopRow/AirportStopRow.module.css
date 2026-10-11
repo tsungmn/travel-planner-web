@@ -1,0 +1,20 @@
+.card {
+  width: 100%;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  background: var(--mantine-color-default-hover);
+  transition:
+    border-color 150ms ease,
+    box-shadow 150ms ease;
+}
+.card:hover,
+.card[data-hovered] {
+  border-color: var(--mantine-color-blue-5);
+  box-shadow: var(--mantine-shadow-xs);
+}
+.flexible {
+  min-width: 0;
+  flex: 1;
+}

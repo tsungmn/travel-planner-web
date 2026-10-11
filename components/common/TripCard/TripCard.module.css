@@ -16,16 +16,16 @@
   outline-offset: 3px;
 }
 
-.past {
-  opacity: 0.72;
-}
-
 .cover {
   position: relative;
   display: flex;
   min-height: 8rem;
   align-items: flex-end;
   padding: 1rem;
+}
+
+.pastCover {
+  opacity: 0.6;
 }
 
 .destination {

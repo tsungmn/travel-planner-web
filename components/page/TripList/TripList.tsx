@@ -19,7 +19,7 @@ import {
 import { IconMapPin, IconPlus, IconRefresh } from "@tabler/icons-react";
 
 import type { Trip } from "@/types";
-import { getTrips } from "@/lib/api";
+import { getTrips, getUser, type UserInfo } from "@/lib/api";
 import { Header } from "@/components/common/Header";
 import { TripCard } from "@/components/common/TripCard";
 import classes from "./TripList.module.css";
@@ -39,6 +39,20 @@ function getQueryState(value: string | null): QueryState {
 }
 
 export function TripListClient() {
+  return (
+    <Suspense
+      fallback={
+        <Center mih="100vh">
+          <Loader size="sm" />
+        </Center>
+      }
+    >
+      <TripListContent />
+    </Suspense>
+  );
+}
+
+function TripListContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const queryState = getQueryState(searchParams.get("state"));
@@ -46,6 +60,13 @@ export function TripListClient() {
   const [trips, setTrips] = useState<Trip[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [user, setUser] = useState<UserInfo>({ name: "", email: "" });
+
+  useEffect(() => {
+    getUser()
+      .then(setUser)
+      .catch(() => undefined);
+  }, []);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -64,149 +85,152 @@ export function TripListClient() {
     }
   }, []);
 
+  const handleDeleted = useCallback((tripId: string) => {
+    setTrips((current) => current.filter((item) => item.id !== tripId));
+  }, []);
+
   useEffect(() => {
-    if (queryState === "loading") {
-      setLoading(true);
-      return;
-    }
-    if (queryState === "empty") {
-      setTrips([]);
-      setLoading(false);
-      setError(false);
-      return;
-    }
-    if (queryState === "error") {
-      setError(true);
-      setLoading(false);
-      return;
-    }
-    load();
+    if (queryState) return;
+    const timer = window.setTimeout(() => {
+      void load();
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, [queryState, load]);
 
-  const showLoading = loading || queryState === "loading";
-  const showEmpty = !showLoading && !error && trips.length === 0;
-  const showContent = !showLoading && !error && trips.length > 0;
-  const upcoming = trips.filter((trip) => !isPast(trip));
+  const showLoading = queryState === "loading" || (!queryState && loading);
+  const showError = queryState === "error" || (!queryState && error);
+  const showEmpty =
+    queryState === "empty" ||
+    (!queryState && !loading && !error && trips.length === 0);
+  const showContent = !queryState && !loading && !error && trips.length > 0;
+  // 다가오는 여행은 시작일이 가까운 순, 지난 여행은 최근 순으로 보여줍니다.
+  const upcoming = trips
+    .filter((trip) => !isPast(trip))
+    .sort(
+      (a, b) =>
+        new Date(a.start_date).getTime() - new Date(b.start_date).getTime(),
+    );
   const past = trips.filter((trip) => isPast(trip));
 
   return (
-    <Suspense
-      fallback={
-        <Center mih="100vh">
-          <Loader size="sm" />
-        </Center>
-      }
-    >
-      <Box className={classes.page}>
-        <Header />
+    <Box className={classes.page}>
+      <Header userName={user.name} userEmail={user.email} />
 
-        <main>
-          <Container size="lg" className={classes.main}>
-            <Group
-              justify="space-between"
-              align="center"
-              className={classes.heading}
+      <main>
+        <Container size="lg" className={classes.main}>
+          <Group
+            justify="space-between"
+            align="center"
+            className={classes.heading}
+          >
+            <Title order={1} size="h2">
+              내 여행
+            </Title>
+            <Button
+              leftSection={<IconPlus size={20} aria-hidden="true" />}
+              onClick={() => router.push("/trips/new")}
+              radius="xl"
+              size="md"
+              fw={600}
             >
-              <Title order={1} size="h2">
-                내 여행
-              </Title>
-              <Button
-                leftSection={<IconPlus size={20} aria-hidden="true" />}
-                onClick={() => router.push("/trips/new")}
-                radius="xl"
-                size="md"
-                fw={600}
-              >
-                새 여행
-              </Button>
-            </Group>
+              새 여행
+            </Button>
+          </Group>
 
-            {showLoading && <LoadingGrid />}
+          {showLoading && <LoadingGrid />}
 
-            {showEmpty && (
-              <Center className={classes.stateArea}>
-                <Stack align="center" gap="xs">
-                  <EmptyIllustration />
-                  <Title order={2} size="h4" mt="md">
-                    아직 여행이 없어요
-                  </Title>
-                  <Text size="sm" c="dimmed">
-                    첫 여행을 만들고 일정을 짜아요.
-                  </Text>
-                  <Button
-                    leftSection={<IconPlus size={20} aria-hidden="true" />}
-                    onClick={() => router.push("/trips/new")}
-                    radius="xl"
-                    size="md"
-                    mt="md"
-                    fw={600}
-                  >
-                    첫 여행 만들기
-                  </Button>
-                </Stack>
-              </Center>
-            )}
-
-            {error && !showLoading && (
-              <Center className={classes.stateArea}>
-                <Stack align="center" gap="xs">
-                  <ThemeIcon color="red" variant="light" size={56} radius="xl">
-                    <IconMapPin size={28} aria-hidden="true" />
-                  </ThemeIcon>
-                  <Title order={2} size="h4" mt="md">
-                    여행 목록을 불러오지 못했어요
-                  </Title>
-                  <Text size="sm" c="dimmed">
-                    잠시 후 다시 시도해 주세요.
-                  </Text>
-                  <Button
-                    variant="default"
-                    leftSection={<IconRefresh size={18} aria-hidden="true" />}
-                    onClick={load}
-                    radius="xl"
-                    size="md"
-                    mt="md"
-                    fw={600}
-                  >
-                    다시 시도
-                  </Button>
-                </Stack>
-              </Center>
-            )}
-
-            {showContent && (
-              <Stack gap={40}>
-                {upcoming.length > 0 && (
-                  <section>
-                    <Text size="sm" fw={600} c="dimmed" mb="md">
-                      다가오는 여행
-                    </Text>
-                    <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }} spacing="xl">
-                      {upcoming.map((trip) => (
-                        <TripCard key={trip.id} trip={trip} />
-                      ))}
-                    </SimpleGrid>
-                  </section>
-                )}
-
-                {past.length > 0 && (
-                  <section>
-                    <Text size="sm" fw={600} c="dimmed" mb="md">
-                      지난 여행
-                    </Text>
-                    <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }} spacing="xl">
-                      {past.map((trip) => (
-                        <TripCard key={trip.id} trip={trip} past />
-                      ))}
-                    </SimpleGrid>
-                  </section>
-                )}
+          {showEmpty && (
+            <Center className={classes.stateArea}>
+              <Stack align="center" gap="xs">
+                <EmptyIllustration />
+                <Title order={2} size="h4" mt="md">
+                  아직 여행이 없어요
+                </Title>
+                <Text size="sm" c="dimmed">
+                  첫 여행을 만들고 일정을 세워요.
+                </Text>
+                <Button
+                  leftSection={<IconPlus size={20} aria-hidden="true" />}
+                  onClick={() => router.push("/trips/new")}
+                  radius="xl"
+                  size="md"
+                  mt="md"
+                  fw={600}
+                >
+                  첫 여행 만들기
+                </Button>
               </Stack>
-            )}
-          </Container>
-        </main>
-      </Box>
-    </Suspense>
+            </Center>
+          )}
+
+          {showError && !showLoading && (
+            <Center className={classes.stateArea}>
+              <Stack align="center" gap="xs">
+                <ThemeIcon color="red" variant="light" size={56} radius="xl">
+                  <IconMapPin size={28} aria-hidden="true" />
+                </ThemeIcon>
+                <Title order={2} size="h4" mt="md">
+                  여행 목록을 불러오지 못했어요
+                </Title>
+                <Text size="sm" c="dimmed">
+                  잠시 후 다시 시도해 주세요.
+                </Text>
+                <Button
+                  variant="default"
+                  leftSection={<IconRefresh size={18} aria-hidden="true" />}
+                  onClick={load}
+                  radius="xl"
+                  size="md"
+                  mt="md"
+                  fw={600}
+                >
+                  다시 시도
+                </Button>
+              </Stack>
+            </Center>
+          )}
+
+          {showContent && (
+            <Stack gap={40}>
+              {upcoming.length > 0 && (
+                <section>
+                  <Text size="sm" fw={600} c="dimmed" mb="md">
+                    다가오는 여행
+                  </Text>
+                  <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }} spacing="xl">
+                    {upcoming.map((trip) => (
+                      <TripCard
+                        key={trip.id}
+                        trip={trip}
+                        onDeleted={handleDeleted}
+                      />
+                    ))}
+                  </SimpleGrid>
+                </section>
+              )}
+
+              {past.length > 0 && (
+                <section>
+                  <Text size="sm" fw={600} c="dimmed" mb="md">
+                    지난 여행
+                  </Text>
+                  <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }} spacing="xl">
+                    {past.map((trip) => (
+                      <TripCard
+                        key={trip.id}
+                        trip={trip}
+                        past
+                        onDeleted={handleDeleted}
+                      />
+                    ))}
+                  </SimpleGrid>
+                </section>
+              )}
+            </Stack>
+          )}
+        </Container>
+      </main>
+    </Box>
   );
 }
 
