@@ -1,0 +1,136 @@
+name: build-and-deploy
+
+# 모든 브랜치: 이미지 빌드 + 스모크 테스트만 한다 (push 도 배포도 하지 않음)
+# main 브랜치: 위에 더해 GHCR 에 push 하고 config 저장소의 이미지 태그를 갱신한다
+#   → ArgoCD 가 자동으로 서버에 배포한다. main 병합은 서버 앞에서 확인할 수 있을 때 하세요.
+on:
+  push:
+    branches: ["**"]
+
+concurrency:
+  group: web-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  # 빌드 시점에 확정되는 값 (next.config.ts 의 rewrites, NEXT_PUBLIC_*)
+  API_ORIGIN: http://api
+  SITE_URL: https://travel.tsungmn.com
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      image: ${{ steps.vars.outputs.image }}
+      tag: ${{ steps.vars.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: vars
+        run: |
+          # GHCR 이미지 이름은 소문자여야 한다
+          echo "image=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/travel-planner-web" >> "$GITHUB_OUTPUT"
+          echo "tag=${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
+
+      # arm64 빌드는 main 에서만 한다 (QEMU 라서 느리다)
+      - uses: docker/setup-qemu-action@v3
+        if: github.ref == 'refs/heads/main'
+      - uses: docker/setup-buildx-action@v3
+
+      # 1) amd64 로 빌드해서 로컬에 올리고 스모크 테스트 (모든 브랜치)
+      - name: 빌드 (amd64, 테스트용)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          load: true
+          tags: web-smoke:ci
+          build-args: |
+            API_ORIGIN=${{ env.API_ORIGIN }}
+            NEXT_PUBLIC_SITE_URL=${{ env.SITE_URL }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: 스모크 테스트
+        run: |
+          docker run -d --name web-smoke -p 3000:3000 web-smoke:ci
+          for i in $(seq 1 30); do
+            curl -fsS -o /dev/null http://localhost:3000/data/airports.json && break
+            sleep 2
+          done
+          # 공항 데이터가 이미지에 들어 있고 올바른 형식인지
+          curl -fsS http://localhost:3000/data/airports.json \
+            | python3 -c "import json,sys; d=json.load(sys.stdin); n=len(d); print(n, 'airports'); assert n > 1000"
+          # 지도 워커 파일 (postinstall 산출물)
+          curl -fsS -o /dev/null http://localhost:3000/maplibre-gl-worker.mjs
+          # root 로 실행되고 있지 않은지
+          test "$(docker exec web-smoke id -u)" != "0"
+
+      - name: 실패 시 컨테이너 로그
+        if: failure()
+        run: docker logs web-smoke || true
+
+      # 2) main 에서만: GHCR 에 로그인하고 multi-arch 이미지를 push
+      - name: GHCR 로그인
+        if: github.ref == 'refs/heads/main'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 빌드 + push (amd64, arm64)
+        if: github.ref == 'refs/heads/main'
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.vars.outputs.image }}:${{ steps.vars.outputs.tag }}
+          build-args: |
+            API_ORIGIN=${{ env.API_ORIGIN }}
+            NEXT_PUBLIC_SITE_URL=${{ env.SITE_URL }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    needs: build
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: ${{ github.repository_owner }}/travel-planner-config
+          token: ${{ secrets.CONFIG_REPO_TOKEN }}
+
+      - name: config repo 의 이미지 태그 갱신
+        env:
+          IMAGE: ${{ needs.build.outputs.image }}
+          TAG: ${{ needs.build.outputs.tag }}
+        run: |
+          python3 - <<'PY'
+          import os, pathlib, re
+          p = pathlib.Path("overlays/prod/kustomization.yaml")
+          s = p.read_text(encoding="utf-8")
+          pattern = re.compile(r'(- name: ' + re.escape(os.environ["IMAGE"]) + r'\n\s+newTag: )"?[^"\n]*"?')
+          new, n = pattern.subn(r'\1"' + os.environ["TAG"] + '"', s)
+          assert n == 1, "kustomization.yaml 에서 이미지 항목을 찾지 못했습니다"
+          p.write_text(new, encoding="utf-8")
+          PY
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if ! git diff --quiet; then
+            git commit -am "web: ${TAG:0:7}"
+            # api 저장소의 deploy 잡과 동시에 push 하면 거절될 수 있어 몇 번 재시도한다
+            for i in 1 2 3 4 5; do
+              if git pull --rebase && git push; then
+                exit 0
+              fi
+              sleep $((RANDOM % 5 + 2))
+            done
+            echo "config 저장소 push 에 실패했습니다" >&2
+            exit 1
+          fi

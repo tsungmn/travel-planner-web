@@ -4,6 +4,7 @@ import type { NextConfig } from "next";
 const API_ORIGIN = process.env.API_ORIGIN ?? "http://127.0.0.1:8000";
 
 const nextConfig: NextConfig = {
+  output: "standalone",
   reactCompiler: true,
   // 브라우저는 항상 같은 origin의 /api로 요청하고, Next가 백엔드로 넘겨 줍니다.
   // 덕분에 CORS가 필요 없고, 로그인 쿠키와 Google OAuth 콜백도 이 도메인 기준으로 동작합니다.

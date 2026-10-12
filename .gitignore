@@ -47,7 +47,6 @@ storybook-static
 /.husky/
 /.vscode/
 /public/maplibre-gl-*.mjs
-/public/data/
 /.fttemplates/
 
 /data/
