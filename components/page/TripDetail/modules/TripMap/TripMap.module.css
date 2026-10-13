@@ -53,6 +53,18 @@
   transform: scale(1.4);
 }
 
+/* 러프 모드의 장소: 영역 뒤로 물러난 작은 회색 점 */
+.roughDot {
+  display: block;
+  width: 8px;
+  height: 8px;
+  border: 1.5px solid #fff;
+  border-radius: 50%;
+  background: var(--mantine-color-gray-6);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 30%);
+  opacity: 0.7;
+}
+
 .lodging,
 .airport {
   display: flex;

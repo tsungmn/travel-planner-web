@@ -8,12 +8,22 @@ import type { MapRef } from "react-map-gl/maplibre";
 import { Center, Loader } from "@mantine/core";
 import { IconHome, IconPlane } from "@tabler/icons-react";
 
-import type { Lodging, PlaceResult, Stop, TripPublic } from "@/types";
+import type {
+  Lodging,
+  MapBounds,
+  PlaceResult,
+  Stop,
+  TripArea,
+  TripMode,
+  TripPublic,
+} from "@/types";
+import { areaBounds } from "@/lib/areas";
 import { addDays } from "@/lib/date";
 import { getDayColor } from "@/lib/dayColor";
 import { uniqueAirportStops, type FlightStop } from "@/lib/flightStops";
 import { findLodgingFor } from "@/lib/lodging";
 import { DEFAULT_VIEW_STATE } from "@/constants/map";
+import { AreaLayer, type AreaEditControl } from "../AreaLayer";
 import classes from "./TripMap.module.css";
 
 const MapContainer = dynamic(() => import("@/components/common/MapContainer"), {
@@ -33,11 +43,23 @@ export type MapInsets = {
 };
 
 export type FlyTarget = { lng: number; lat: number; zoom: number };
+/** 이 범위가 보이도록 지도를 맞춥니다. (객체가 새로 만들어질 때마다 한 번 움직입니다) */
+export type FitTarget = MapBounds;
 
 type TripMapProps = {
   trip: TripPublic;
   stops: Stop[];
   lodgings: Lodging[];
+  /** 러프 계획 영역 */
+  areas: TripArea[];
+  /**
+   * 러프: 영역이 주인공이고 장소는 작은 회색 점으로 물러납니다.
+   * 계획: 장소 마커가 주인공이고, 영역은 `showAreas`일 때 옅은 배경으로만 보입니다.
+   */
+  mode: TripMode;
+  showAreas: boolean;
+  /** 러프 모드에서 영역을 고르고 옮기는 데 쓰는 핸들러. 없으면 읽기 전용입니다. */
+  areaEdit?: AreaEditControl;
   /** 항공편의 출발·도착 공항. 숙소처럼 항상 보이지만 지도 범위 맞춤에는 넣지 않습니다. */
   flightStops: FlightStop[];
   /** null이면 "전체" 탭: 모든 일차를 번호 마커로 보여주고 경로는 그리지 않습니다. */
@@ -47,12 +69,19 @@ type TripMapProps = {
   /** 검색 결과 / 숙소 위치 미리보기 */
   preview: PlaceResult | null;
   flyTo: FlyTarget | null;
+  fitTo?: FitTarget | null;
   /** 패널·바텀시트에 가려지는 영역 */
   insets: MapInsets;
   /** 숙소 위치를 지도에서 직접 고르는 중 */
   pickMode: boolean;
   onMarkerClick: (markerId: string) => void;
   onMapClick: (lng: number, lat: number) => void;
+  /**
+   * 사용자가 직접 지도를 움직이면 패널·시트에 가리지 않는 영역의 범위를,
+   * 코드로 움직인 경우(범위 맞춤, 결과로 이동)에는 null을 알립니다.
+   * 공유 화면처럼 검색이 없는 곳에서는 생략합니다.
+   */
+  onViewChange?: (bounds: MapBounds | null) => void;
 };
 
 type Pin = {
@@ -84,6 +113,36 @@ function boundsOf(
   ];
 }
 
+/** 패널·시트에 가리지 않고 실제로 보이는 지도 범위. 가려진 영역이 너무 크면 화면 전체를 씁니다. */
+function visibleBounds(map: MapRef, insets: MapInsets): MapBounds {
+  const canvas = map.getCanvas();
+  const width = canvas.clientWidth;
+  const height = canvas.clientHeight;
+  const hidden =
+    width - insets.right <= insets.left || height - insets.bottom <= insets.top;
+  const { top, right, bottom, left } = hidden
+    ? { top: 0, right: 0, bottom: 0, left: 0 }
+    : insets;
+
+  // 지도가 회전돼 있어도 네 모서리를 모두 보고 감싸는 사각형을 만듭니다.
+  const corners = [
+    map.unproject([left, top]),
+    map.unproject([width - right, top]),
+    map.unproject([width - right, height - bottom]),
+    map.unproject([left, height - bottom]),
+  ];
+  const lngs = corners.map((corner) => corner.lng);
+  const lats = corners.map((corner) => corner.lat);
+  const clamp = (value: number, min: number, max: number) =>
+    Math.min(max, Math.max(min, value));
+  return {
+    west: clamp(Math.min(...lngs), -180, 180),
+    south: clamp(Math.min(...lats), -90, 90),
+    east: clamp(Math.max(...lngs), -180, 180),
+    north: clamp(Math.max(...lats), -90, 90),
+  };
+}
+
 /**
  * 한 일차에 맞출 점들: 그 일차의 장소 + 그날 밤 묵는 숙소(체크인 ≤ 그날 < 체크아웃).
  * 날짜가 없는 숙소는 어느 일차인지 알 수 없어 뺍니다.
@@ -107,23 +166,42 @@ function pointsOfDay(
   ];
 }
 
+/** 영역의 네 모서리. 지도 범위 맞춤에 쓸 점들입니다. */
+function cornersOfAreas(areas: TripArea[]): Point[] {
+  return areas.flatMap((area) => {
+    const { west, south, east, north } = areaBounds(area);
+    return [
+      { lng: west, lat: south },
+      { lng: east, lat: north },
+    ];
+  });
+}
+
 export function TripMap({
   trip,
   stops,
   lodgings,
+  areas,
+  mode,
+  showAreas,
+  areaEdit,
   flightStops,
   selectedDay,
   hoveredId,
   highlightedId,
   preview,
   flyTo,
+  fitTo,
   insets,
   pickMode,
   onMarkerClick,
   onMapClick,
+  onViewChange,
 }: TripMapProps) {
   const mapRef = useRef<MapRef>(null);
   const hasFitted = useRef(false);
+  // 지금 진행 중인 이동이 사용자가 한 것인지. (드래그·휠·+/- 버튼은 originalEvent가 있고, 코드로 한 이동은 없습니다)
+  const userMoving = useRef(false);
   const [mapReady, setMapReady] = useState(false);
 
   const sortedStops = useMemo(
@@ -170,18 +248,37 @@ export function TripMap({
     [flightStops],
   );
 
+  const rough = mode === "rough";
+
   const routes = useMemo(() => {
-    if (selectedDay === null) return [];
+    // 러프 모드에서는 장소를 잇는 경로가 영역을 가려서 그리지 않습니다.
+    if (rough || selectedDay === null) return [];
     const coordinates = sortedStops
       .filter((stop) => stop.day_index === selectedDay)
       .map((stop) => [stop.lng, stop.lat] as [number, number]);
     return coordinates.length >= 2
       ? [{ dayIndex: selectedDay, coordinates }]
       : [];
-  }, [sortedStops, selectedDay]);
+  }, [sortedStops, selectedDay, rough]);
 
-  const fitKey =
-    selectedDay === null
+  // 러프 모드에서는 (선택한 일차의) 영역들에 맞춥니다. 영역이 없으면 장소·숙소로 대신합니다.
+  const roughPoints = useMemo(
+    () =>
+      rough
+        ? cornersOfAreas(
+            areas.filter(
+              (area) => selectedDay === null || area.day_index === selectedDay,
+            ),
+          )
+        : [],
+    [rough, areas, selectedDay],
+  );
+  const fitAreas = roughPoints.length > 0;
+
+  // 영역 키에는 좌표를 넣지 않습니다. 영역을 끌 때마다 지도가 따라 움직이면 안 되니까요.
+  const fitKey = fitAreas
+    ? `rough|${selectedDay ?? "all"}`
+    : selectedDay === null
       ? "all"
       : `day${selectedDay}|${toKey(pointsOfDay(selectedDay, trip.start_date, stops, lodgings))}`;
   const lastFit = useRef<{ key: string; points: Point[] } | null>(null);
@@ -192,6 +289,8 @@ export function TripMap({
     if (lastFit.current?.key === fitKey) {
       // 패널 크기만 바뀐 경우: 같은 범위를 새 여백으로 다시 맞춥니다.
       points = lastFit.current.points;
+    } else if (fitAreas) {
+      points = roughPoints;
     } else if (selectedDay !== null) {
       points = pointsOfDay(selectedDay, trip.start_date, stops, lodgings);
     } else {
@@ -232,6 +331,26 @@ export function TripMap({
     flyToTarget(map, flyTo);
   }, [mapReady, flyTo]);
 
+  const fitToBounds = useEffectEvent((map: MapRef, target: FitTarget) => {
+    map.fitBounds(
+      [
+        [target.west, target.south],
+        [target.east, target.north],
+      ],
+      {
+        padding: { top, right, bottom, left },
+        maxZoom: 16,
+        duration: 800,
+      },
+    );
+  });
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!mapReady || !map || !fitTo) return;
+    fitToBounds(map, fitTo);
+  }, [mapReady, fitTo]);
+
   const initialViewState =
     trip.dest_lng !== null && trip.dest_lat !== null
       ? { longitude: trip.dest_lng, latitude: trip.dest_lat, zoom: 12 }
@@ -256,6 +375,19 @@ export function TripMap({
         onLoad: () => setMapReady(true),
         onClick: (event) => {
           if (pickMode) onMapClick(event.lngLat.lng, event.lngLat.lat);
+        },
+        onMoveStart: (event) => {
+          userMoving.current = Boolean(event.originalEvent);
+        },
+        onMoveEnd: () => {
+          const map = mapRef.current;
+          if (!map) return;
+          if (!userMoving.current) {
+            onViewChange?.(null);
+            return;
+          }
+          userMoving.current = false;
+          onViewChange?.(visibleBounds(map, insets));
         },
       }}
     >
@@ -284,7 +416,31 @@ export function TripMap({
         </Source>
       ))}
 
+      {/* 영역이 없어도 러프 모드에서 첫 영역을 그리는 중이면 도구가 필요합니다. */}
+      {(rough || showAreas) &&
+        (areas.length > 0 || (rough && areaEdit?.addMode)) && (
+          <AreaLayer
+            areas={areas}
+            selectedDay={selectedDay}
+            variant={rough ? "rough" : "background"}
+            edit={rough ? areaEdit : undefined}
+          />
+        )}
+
       {pins.map((pin) => {
+        if (rough) {
+          // 러프 모드: 영역 선택·드래그를 방해하지 않도록 클릭을 받지 않는 작은 점으로만 둡니다.
+          return (
+            <Marker
+              key={pin.id}
+              longitude={pin.lng}
+              latitude={pin.lat}
+              style={{ pointerEvents: "none" }}
+            >
+              <span className={classes.roughDot} aria-hidden="true" />
+            </Marker>
+          );
+        }
         const highlight = hoveredId === pin.id || highlightedId === pin.id;
         const style = {
           "--marker-color": getDayColor(pin.dayIndex).hex,

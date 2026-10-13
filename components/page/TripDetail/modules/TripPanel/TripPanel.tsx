@@ -6,6 +6,7 @@ import {
   Group,
   ScrollArea,
   Stack,
+  Switch,
   Text,
   Title,
 } from "@mantine/core";
@@ -17,7 +18,7 @@ import {
   IconPlus,
 } from "@tabler/icons-react";
 
-import type { Flight, Lodging, Stop, Trip } from "@/types";
+import type { Flight, Lodging, Stop, Trip, TripArea, TripMode } from "@/types";
 import { formatPeriod } from "@/lib/date";
 import {
   EMPTY_DAY_FLIGHT_STOPS,
@@ -25,10 +26,13 @@ import {
   type FlightStop,
 } from "@/lib/flightStops";
 import { AllDaysList } from "../AllDaysList";
+import { AreaSection } from "../AreaSection";
+import type { AreaPatch } from "../AreaSection/AreaEditor";
 import { DayStopList } from "../DayStopList";
 import { DayTabs } from "../DayTabs";
 import { FlightSection } from "../FlightSection";
 import { LodgingSection } from "../LodgingSection";
+import { ModeSwitch } from "../ModeSwitch";
 import { TripHeaderActions } from "../TripHeaderActions";
 import classes from "./TripPanel.module.css";
 
@@ -41,6 +45,13 @@ type TripPanelProps = {
   flights: Flight[];
   /** 항공편에서 만든 공항 항목 (전체 일차) */
   flightStops: FlightStop[];
+  areas: TripArea[];
+  mode: TripMode;
+  /** 계획 모드에서 지도에 영역을 옅게 깔지 */
+  showAreas: boolean;
+  selectedAreaId: string | null;
+  newAreaId: string | null;
+  addAreaMode: boolean;
   selectedDay: number | null;
   saveStatus: SaveStatus;
   expandedStopId: string | null;
@@ -48,6 +59,13 @@ type TripPanelProps = {
   highlightedStopId: string | null;
   /** 장소 목록 영역. 지도 마커를 눌렀을 때 해당 카드로 스크롤하는 데 씁니다. */
   listRef: Ref<HTMLDivElement>;
+  onModeChange: (mode: TripMode) => void;
+  onShowAreasChange: (show: boolean) => void;
+  onSelectArea: (id: string | null) => void;
+  onToggleAddArea: () => void;
+  onChangeArea: (id: string, patch: AreaPatch) => void;
+  onDeleteArea: (id: string) => void;
+  onSearchInArea: (area: TripArea) => void;
   onSelectDay: (day: number | null) => void;
   onToggleStop: (id: string) => void;
   onHoverStop: (id: string | null) => void;
@@ -75,12 +93,25 @@ export function TripPanel({
   lodgings,
   flights,
   flightStops,
+  areas,
+  mode,
+  showAreas,
+  selectedAreaId,
+  newAreaId,
+  addAreaMode,
   selectedDay,
   saveStatus,
   expandedStopId,
   hoveredStopId,
   highlightedStopId,
   listRef,
+  onModeChange,
+  onShowAreasChange,
+  onSelectArea,
+  onToggleAddArea,
+  onChangeArea,
+  onDeleteArea,
+  onSearchInArea,
   onSelectDay,
   onToggleStop,
   onHoverStop,
@@ -182,17 +213,31 @@ export function TripPanel({
           )}
         </Group>
 
-        <FlightSection
-          flights={flights}
-          onAdd={onAddFlight}
-          onEdit={onEditFlight}
-        />
-        <LodgingSection
-          lodgings={lodgings}
-          onAdd={onAddLodging}
-          onEdit={onEditLodging}
-          onFocus={onFocusLodging}
-        />
+        <ModeSwitch mode={mode} onChange={onModeChange} />
+        {mode === "plan" && areas.length > 0 && (
+          <Switch
+            size="sm"
+            label="지도에 영역 표시"
+            checked={showAreas}
+            onChange={(event) => onShowAreasChange(event.currentTarget.checked)}
+          />
+        )}
+
+        {mode === "plan" && (
+          <>
+            <FlightSection
+              flights={flights}
+              onAdd={onAddFlight}
+              onEdit={onEditFlight}
+            />
+            <LodgingSection
+              lodgings={lodgings}
+              onAdd={onAddLodging}
+              onEdit={onEditLodging}
+              onFocus={onFocusLodging}
+            />
+          </>
+        )}
 
         <DayTabs
           numDays={trip.num_days}
@@ -201,47 +246,66 @@ export function TripPanel({
           onSelect={onSelectDay}
         />
 
-        <Box ref={listRef}>
-          {selectedDay === null ? (
-            <AllDaysList
-              trip={trip}
-              stops={stops}
-              lodgings={lodgings}
-              flightStops={flightStops}
-              hoveredStopId={hoveredStopId}
-              onHoverStop={onHoverStop}
-              onSelect={onSelectDay}
-            />
-          ) : (
-            <DayStopList
-              trip={trip}
-              stops={dayStops}
-              lodgings={lodgings}
-              flightStops={dayFlightStops}
-              dayIndex={selectedDay}
-              expandedStopId={expandedStopId}
-              hoveredStopId={hoveredStopId}
-              highlightedStopId={highlightedStopId}
-              onToggle={onToggleStop}
-              onHover={onHoverStop}
-              onFocusFlightStop={onFocusFlightStop}
-              onMemo={onMemo}
-              onAlias={onAlias}
-              onMove={onMoveStop}
-              onReorder={onReorder}
-              onDelete={onDeleteStop}
-            />
-          )}
-        </Box>
+        {mode === "rough" ? (
+          <AreaSection
+            trip={trip}
+            areas={areas}
+            stops={stops}
+            selectedDay={selectedDay}
+            selectedAreaId={selectedAreaId}
+            newAreaId={newAreaId}
+            addMode={addAreaMode}
+            onSelect={onSelectArea}
+            onToggleAdd={onToggleAddArea}
+            onChange={onChangeArea}
+            onDelete={onDeleteArea}
+            onSearchInArea={onSearchInArea}
+          />
+        ) : (
+          <>
+            <Box ref={listRef}>
+              {selectedDay === null ? (
+                <AllDaysList
+                  trip={trip}
+                  stops={stops}
+                  lodgings={lodgings}
+                  flightStops={flightStops}
+                  hoveredStopId={hoveredStopId}
+                  onHoverStop={onHoverStop}
+                  onSelect={onSelectDay}
+                />
+              ) : (
+                <DayStopList
+                  trip={trip}
+                  stops={dayStops}
+                  lodgings={lodgings}
+                  flightStops={dayFlightStops}
+                  dayIndex={selectedDay}
+                  expandedStopId={expandedStopId}
+                  hoveredStopId={hoveredStopId}
+                  highlightedStopId={highlightedStopId}
+                  onToggle={onToggleStop}
+                  onHover={onHoverStop}
+                  onFocusFlightStop={onFocusFlightStop}
+                  onMemo={onMemo}
+                  onAlias={onAlias}
+                  onMove={onMoveStop}
+                  onReorder={onReorder}
+                  onDelete={onDeleteStop}
+                />
+              )}
+            </Box>
 
-        <Button
-          variant="default"
-          className={classes.addPlace}
-          leftSection={<IconPlus size={16} />}
-          onClick={onOpenSearch}
-        >
-          장소 추가
-        </Button>
+            <Button
+              variant="default"
+              className={classes.addPlace}
+              leftSection={<IconPlus size={16} />}
+              onClick={onOpenSearch}
+            >
+              장소 추가
+            </Button>
+          </>
+        )}
       </Stack>
     </ScrollArea>
   );

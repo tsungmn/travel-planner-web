@@ -1,21 +1,29 @@
-import type { Flight, Lodging, PlaceResult, Stop, Trip } from "@/types";
+import type {
+  Flight,
+  Lodging,
+  PlaceResult,
+  Stop,
+  Trip,
+  TripArea,
+} from "@/types";
 import type { DetailView } from "../../hooks/useDetailRoute";
 import { FlightForm, type FlightFormData } from "../FlightForm";
 import { LodgingForm, type LodgingFormData } from "../LodgingForm";
 import { PanelSubScreen } from "../PanelSubScreen";
-import { PlaceSearch } from "../PlaceSearch";
+import { PlaceSearch, type MapSearchControl } from "../PlaceSearch";
 import { TripEditForm, type TripEditFormData } from "../TripEditForm";
 
 type SubScreenProps = {
   view: DetailView;
   /** `?dir=` : 새 항공편을 추가할 방향 */
   direction: Flight["direction"] | null;
-  /** `?id=` : 수정할 항공편/숙소 */
+  /** `?id=` : 수정할 항공편/숙소, 장소 검색에서는 검색 범위로 쓸 영역 */
   targetId: string | null;
   trip: Trip;
   stops: Stop[];
   lodgings: Lodging[];
   flights: Flight[];
+  areas: TripArea[];
   selectedDay: number | null;
   onClose: () => void;
   onAddPlace: (place: PlaceResult, dayIndex: number) => Promise<boolean>;
@@ -35,6 +43,8 @@ type SubScreenProps = {
     active: boolean,
     onPick?: (coords: { lng: number; lat: number }) => void,
   ) => void;
+  /** 장소 검색의 "현 지도에서 검색" 버튼이 쓰는 지도 쪽 정보. */
+  mapSearch: MapSearchControl;
 };
 
 /** `?view=` 값에 맞는 패널 서브 화면을 그립니다. */
@@ -42,19 +52,24 @@ export function SubScreen(props: SubScreenProps) {
   const { view, trip, stops, flights, lodgings, onClose } = props;
 
   if (view === "search") {
+    const area = props.areas.find((a) => a.id === props.targetId) ?? null;
     return (
       <PanelSubScreen title="장소 추가" onBack={onClose}>
         <PlaceSearch
+          // 영역이 바뀌면 검색 범위도 새로 시작합니다.
+          key={area?.id ?? "all"}
           trip={trip}
           stops={stops}
           lodgings={lodgings}
           selectedDay={props.selectedDay}
+          area={area}
           onAddPlace={props.onAddPlace}
           onPreview={props.onPreview}
           onFocusPlace={props.onFocusPlace}
           onViewAdded={onClose}
           pickMode={props.pickMode}
           onPickModeChange={props.onPickModeChange}
+          mapSearch={props.mapSearch}
         />
       </PanelSubScreen>
     );

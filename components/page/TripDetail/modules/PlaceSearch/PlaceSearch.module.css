@@ -33,6 +33,11 @@
   border-color: var(--mantine-color-teal-5);
   color: var(--mantine-color-teal-7);
 }
+/* 지도 위에 떠 있는 버튼. 부모 층은 클릭을 통과시키므로 버튼만 클릭을 받습니다. */
+.viewSearchButton {
+  box-shadow: var(--mantine-shadow-md);
+  pointer-events: auto;
+}
 .chipLabel {
   max-width: 10rem;
   overflow: hidden;

@@ -13,7 +13,7 @@ import { Box, Button } from "@mantine/core";
 import { useElementSize, useMediaQuery } from "@mantine/hooks";
 import { IconAlertCircle } from "@tabler/icons-react";
 
-import type { Flight, Lodging, Stop, TripPublic } from "@/types";
+import type { Flight, Lodging, Stop, TripArea, TripPublic } from "@/types";
 import { getSharedTrip } from "@/lib/api";
 import { useAirports } from "@/lib/airports";
 import {
@@ -44,6 +44,7 @@ type TripData = {
   stops: Stop[];
   lodgings: Lodging[];
   flights: Flight[];
+  areas: TripArea[];
 };
 
 /** 데스크톱 왼쪽 패널 너비(px). SharedTrip.module.css의 .panel 너비(25rem)와 같아야 합니다. */
@@ -209,7 +210,7 @@ function SharedTripContent({ token }: { token: string }) {
       />
     );
 
-  const { trip, stops, lodgings, flights } = data;
+  const { trip, stops, lodgings, flights, areas } = data;
 
   return (
     <Box className={classes.page}>
@@ -259,6 +260,10 @@ function SharedTripContent({ token }: { token: string }) {
             trip={trip}
             stops={stops}
             lodgings={lodgings}
+            // 공유 화면은 읽기 전용이라, 러프 영역은 계획 모드의 옅은 배경으로만 보여줍니다.
+            areas={areas}
+            mode="plan"
+            showAreas
             flightStops={flightStops}
             selectedDay={selectedDay}
             hoveredId={hoveredId}

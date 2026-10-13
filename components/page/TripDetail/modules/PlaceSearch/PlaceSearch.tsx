@@ -1,5 +1,6 @@
 import { useEffect, useEffectEvent, useRef, useState } from "react";
 import type { KeyboardEvent } from "react";
+import { createPortal } from "react-dom";
 import {
   Alert,
   Badge,
@@ -20,17 +21,37 @@ import {
   IconBed,
   IconCrosshair,
   IconMapPin,
+  IconRefresh,
   IconSearch,
 } from "@tabler/icons-react";
 
-import type { Lodging, PlaceResult, Stop, Trip } from "@/types";
+import type {
+  Lodging,
+  MapBounds,
+  PlaceResult,
+  Stop,
+  Trip,
+  TripArea,
+} from "@/types";
 import type { PlaceSearchError } from "../../hooks/usePlaceSearch";
+import { areaBounds, areaTitle, isInArea } from "@/lib/areas";
 import { formatDayDate } from "@/lib/date";
+import { formatDistance } from "@/lib/geo";
 import { getDayColor } from "@/lib/dayColor";
 import { findLodgingFor } from "@/lib/lodging";
 import { NEARBY_SEARCH_RADIUS_KM } from "@/constants/search";
 import { usePlaceSearch } from "../../hooks/usePlaceSearch";
 import classes from "./PlaceSearch.module.css";
+
+/** "현 지도에서 검색" 버튼이 지도와 주고받는 정보. */
+export type MapSearchControl = {
+  /** 지도 위에 버튼을 띄울 층. 아직 없으면 null. */
+  overlay: HTMLElement | null;
+  /** 검색 뒤 사용자가 지도를 움직였을 때 보이는 범위. 움직이지 않았으면 null. */
+  movedBounds: MapBounds | null;
+  /** 그 범위로 검색을 시작했으니 버튼을 숨겨도 된다고 알립니다. */
+  onConsume: () => void;
+};
 
 type PlaceSearchProps = {
   trip: Trip;
@@ -38,6 +59,8 @@ type PlaceSearchProps = {
   lodgings: Lodging[];
   /** 일차 탭에서 열었다면 그 일차, "전체" 탭이면 null (직접 고르게 합니다). */
   selectedDay: number | null;
+  /** 영역에서 열었다면 그 영역. 처음에 그 영역 안에서만 찾습니다. */
+  area?: TripArea | null;
   /** 저장에 성공하면 true, 실패하면 false를 돌려줍니다. (실패 안내는 호출한 쪽이 띄웁니다) */
   onAddPlace: (place: PlaceResult, dayIndex: number) => Promise<boolean>;
   /** 결과에 마우스를 올렸을 때: 지도에 점선 원만 띄웁니다. (지도는 움직이지 않음) */
@@ -52,6 +75,7 @@ type PlaceSearchProps = {
     active: boolean,
     onPick?: (coords: { lng: number; lat: number }) => void,
   ) => void;
+  mapSearch: MapSearchControl;
 };
 
 /** 숙소를 장소로 추가할 때 쓰는 값으로 바꿉니다. */
@@ -75,14 +99,24 @@ export function PlaceSearch({
   stops,
   lodgings,
   selectedDay,
+  area = null,
   onAddPlace,
   onPreview,
   onFocusPlace,
   onViewAdded,
   pickMode,
   onPickModeChange,
+  mapSearch,
 }: PlaceSearchProps) {
-  const search = usePlaceSearch({ lat: trip.dest_lat, lng: trip.dest_lng });
+  const search = usePlaceSearch(
+    { lat: trip.dest_lat, lng: trip.dest_lng },
+    area ? areaBounds(area) : null,
+  );
+  // 검색 업체는 사각형 범위로만 찾아 주니, 원 밖(모서리)의 결과는 걸러냅니다.
+  const results =
+    area && search.inArea
+      ? search.results.filter((place) => isInArea(place, area))
+      : search.results;
   const [pickedDay, setPickedDay] = useState(0);
   // 이 화면을 연 뒤로 추가한 개수. 화면이 닫히면 함께 사라집니다.
   const [addedCount, setAddedCount] = useState(0);
@@ -144,6 +178,19 @@ export function PlaceSearch({
   }
 
   const rateLimited = search.error === "rate";
+  // 검색어가 있고, 검색 뒤 지도를 움직였을 때만 "현 지도에서 검색"을 보여줍니다.
+  const showViewSearch =
+    mapSearch.overlay !== null &&
+    mapSearch.movedBounds !== null &&
+    search.query.trim().length >= 2 &&
+    !rateLimited &&
+    !search.loading;
+
+  function handleSearchInView() {
+    if (!mapSearch.movedBounds) return;
+    search.searchInView(mapSearch.movedBounds);
+    mapSearch.onConsume();
+  }
   // 자동완성을 쓸 수 없는 서버라면, 입력만으로는 결과가 안 나온다고 미리 알려줍니다.
   const needsSubmit =
     search.suggestUnavailable && search.query.trim().length >= 2;
@@ -240,7 +287,11 @@ export function PlaceSearch({
           여행지 주변만
         </Button>
         <Text size="xs" c="dimmed">
-          여행지 반경 약 {NEARBY_SEARCH_RADIUS_KM}km
+          {area && search.inArea
+            ? `「${areaTitle(area)}」 반경 ${formatDistance(area.radius_m / 1000)} 안에서 검색 중`
+            : search.searchScope === "view"
+              ? "현재 지도 범위에서 검색 중"
+              : `여행지 반경 약 ${NEARBY_SEARCH_RADIUS_KM}km`}
         </Text>
       </Group>
 
@@ -263,13 +314,13 @@ export function PlaceSearch({
           </>
         ) : search.error ? (
           <SearchError error={search.error} onRetry={search.submit} />
-        ) : search.hasSearched && search.results.length === 0 ? (
+        ) : search.hasSearched && results.length === 0 ? (
           <Text size="sm" c="dimmed" ta="center" py="xl">
             검색 결과가 없어요
           </Text>
-        ) : search.results.length > 0 ? (
+        ) : results.length > 0 ? (
           <>
-            {search.results.map((place) => {
+            {results.map((place) => {
               // 숙소는 중복해서 넣을 수 있으니 "추가됨"으로 막지 않습니다.
               const existing = findLodgingFor(place, lodgings)
                 ? undefined
@@ -361,6 +412,21 @@ export function PlaceSearch({
           </Button>
         </Group>
       )}
+
+      {showViewSearch &&
+        mapSearch.overlay &&
+        createPortal(
+          <Button
+            radius="xl"
+            color="teal"
+            classNames={{ root: classes.viewSearchButton }}
+            leftSection={<IconRefresh size={16} aria-hidden="true" />}
+            onClick={handleSearchInView}
+          >
+            현 지도에서 검색
+          </Button>,
+          mapSearch.overlay,
+        )}
     </Stack>
   );
 }

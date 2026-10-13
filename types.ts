@@ -39,6 +39,26 @@ export type Stop = {
   memo: string | null;
 };
 
+/**
+ * 러프 계획 영역: "이 날은 이 동네를 돌아다니자"를 원(중심 + 반경)으로 표시한 것.
+ * 장소(Stop)와는 연결 키가 없고, 좌표로 영역 안에 있는지 계산합니다.
+ */
+export type TripArea = {
+  id: string;
+  trip_id: string;
+  /** 0부터. null이면 일차 미지정 */
+  day_index: number | null;
+  /** 비어 있을 수 있습니다. 화면에서는 "이름 없음"으로 보여줍니다. */
+  label: string;
+  lat: number;
+  lng: number;
+  radius_m: number;
+  memo: string | null;
+};
+
+/** 여행 화면의 작업 모드. 러프: 영역으로 큰 그림 잡기 / 계획: 장소·항공·숙소 */
+export type TripMode = "rough" | "plan";
+
 export type Flight = {
   id: string;
   trip_id: string;
@@ -77,6 +97,14 @@ export type PlaceResult = {
 
 export type SearchMode = "suggest" | "full";
 
+/** 지도에 보이는 범위. (경도·위도 순서가 아니라 이름으로 구분합니다) */
+export type MapBounds = {
+  west: number;
+  south: number;
+  east: number;
+  north: number;
+};
+
 export type PlaceSearchOut = {
   items: PlaceResult[];
   attribution: string;
@@ -87,4 +115,5 @@ export type TripDetail = {
   stops: Stop[];
   flights: Flight[];
   lodgings: Lodging[];
+  areas: TripArea[];
 };

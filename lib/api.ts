@@ -5,8 +5,10 @@ import type {
   Stop,
   Flight,
   Lodging,
+  TripArea,
   PlaceSearchOut,
   SearchMode,
+  MapBounds,
 } from "@/types";
 import { ApiError, request } from "@/lib/http";
 import { inclusiveDays } from "@/lib/date";
@@ -42,12 +44,14 @@ type TripDetailResponse = TripResponse & {
   stops: Stop[];
   flights: Flight[];
   lodgings: Lodging[];
+  areas: TripArea[];
 };
 type SharedTripResponse = {
   trip: Omit<TripPublic, "num_days">;
   stops: Stop[];
   flights: Flight[];
   lodgings: Lodging[];
+  areas: TripArea[];
 };
 
 function toTripFields(raw: TripResponse): Omit<Trip, "stop_count"> {
@@ -95,6 +99,7 @@ export async function getTrip(tripId: string): Promise<TripDetail | null> {
       stops: raw.stops,
       flights: raw.flights,
       lodgings: raw.lodgings,
+      areas: raw.areas,
     };
   } catch (error) {
     return nullIfNotFound(error);
@@ -165,6 +170,7 @@ export async function getSharedTrip(token: string): Promise<{
   stops: Stop[];
   flights: Flight[];
   lodgings: Lodging[];
+  areas: TripArea[];
 } | null> {
   try {
     const raw = await request<SharedTripResponse>(
@@ -179,6 +185,7 @@ export async function getSharedTrip(token: string): Promise<{
       stops: raw.stops,
       flights: raw.flights,
       lodgings: raw.lodgings,
+      areas: raw.areas,
     };
   } catch (error) {
     return nullIfNotFound(error);
@@ -221,6 +228,8 @@ export async function searchPlaces(
     mode?: SearchMode;
     nearLat?: number | null;
     nearLng?: number | null;
+    /** 있으면 이 범위 안에서만 검색합니다. (여행지 주변 설정보다 우선) */
+    bbox?: MapBounds;
   },
 ): Promise<PlaceSearchOut> {
   const q = query.trim();
@@ -231,8 +240,14 @@ export async function searchPlaces(
     mode: opts?.mode ?? "full",
     lang: "ko",
   });
-  const { nearLat, nearLng } = opts ?? {};
-  if (nearLat != null && nearLng != null) {
+  const { nearLat, nearLng, bbox } = opts ?? {};
+  if (bbox) {
+    const { west, south, east, north } = bbox;
+    params.set(
+      "bbox",
+      [west, south, east, north].map((value) => value.toFixed(6)).join(","),
+    );
+  } else if (nearLat != null && nearLng != null) {
     params.set("lat", String(nearLat));
     params.set("lng", String(nearLng));
     params.set("nearby", "true");
@@ -294,6 +309,41 @@ export async function reorderStops(
   await request(`${tripPath(tripId)}/stops/order`, {
     method: "PUT",
     body: items,
+  });
+}
+
+/* ───────── 영역(러프 계획) ───────── */
+
+export type AreaInput = Omit<TripArea, "id" | "trip_id">;
+
+export function createArea(
+  tripId: string,
+  input: AreaInput,
+): Promise<TripArea> {
+  return request<TripArea>(`${tripPath(tripId)}/areas`, {
+    method: "POST",
+    body: input,
+  });
+}
+
+/** `day_index`와 `memo`는 null을 보내 지울 수 있습니다. */
+export function updateArea(
+  tripId: string,
+  areaId: string,
+  patch: Partial<AreaInput>,
+): Promise<TripArea> {
+  return request<TripArea>(
+    `${tripPath(tripId)}/areas/${encodeURIComponent(areaId)}`,
+    { method: "PATCH", body: patch },
+  );
+}
+
+export async function deleteArea(
+  tripId: string,
+  areaId: string,
+): Promise<void> {
+  await request(`${tripPath(tripId)}/areas/${encodeURIComponent(areaId)}`, {
+    method: "DELETE",
   });
 }
 

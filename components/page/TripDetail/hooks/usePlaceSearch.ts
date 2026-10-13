@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 
-import type { PlaceResult, SearchMode } from "@/types";
+import type { MapBounds, PlaceResult, SearchMode } from "@/types";
 import {
   searchPlaces,
   SearchRateLimitError,
@@ -21,6 +21,18 @@ export type PlaceSearchError = "rate" | "unavailable" | "network" | "upstream";
 
 type Center = { lat: number | null; lng: number | null };
 
+/**
+ * 검색 범위.
+ * - nearby: 여행지 반경 안 (기본값, "여행지 주변만")
+ * - world: 제한 없음
+ * - view: "현 지도에서 검색"을 눌렀을 때의 지도 범위, 또는 영역에서 연 검색의 영역 범위
+ *   (`source: "area"`)
+ */
+type SearchScope =
+  | { kind: "nearby" }
+  | { kind: "world" }
+  | { kind: "view"; bounds: MapBounds; source?: "area" };
+
 function toSearchError(error: unknown): PlaceSearchError {
   if (error instanceof SearchRateLimitError) return "rate";
   if (error instanceof SearchServiceUnavailableError) return "unavailable";
@@ -29,19 +41,28 @@ function toSearchError(error: unknown): PlaceSearchError {
 }
 
 /**
- * 장소 검색 상태를 관리합니다. (디바운스, 오래된 응답 무시, 여행지 주변 필터)
+ * 장소 검색 상태를 관리합니다. (디바운스, 오래된 응답 무시, 여행지 주변 / 현 지도 범위 필터)
  * 장소 추가 화면과 숙소 폼이 같이 씁니다.
  *
  * 입력 → 타이머 → 요청이 모두 이벤트 핸들러 안에서 이어지도록 해서 effect 없이 동작합니다.
  */
-export function usePlaceSearch(center: Center) {
+export function usePlaceSearch(
+  center: Center,
+  /** 있으면 "여행지 주변" 대신 이 범위(러프 계획의 영역)에서 시작합니다. */
+  areaBounds?: MapBounds | null,
+) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<PlaceResult[]>([]);
   const [attribution, setAttribution] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<PlaceSearchError | null>(null);
   const [hasSearched, setHasSearched] = useState(false);
-  const [nearbyOnly, setNearbyOnly] = useState(true);
+  const [scope, setScope] = useState<SearchScope>(() =>
+    areaBounds
+      ? { kind: "view", bounds: areaBounds, source: "area" }
+      : { kind: "nearby" },
+  );
+  const nearbyOnly = scope.kind === "nearby";
   // 서버에 자동완성(suggest)이 설정돼 있지 않으면 true가 됩니다.
   // 이때는 입력 중 요청을 보내지 않고, Enter/검색 버튼의 전체 검색(full)만 씁니다.
   const [suggestUnavailable, setSuggestUnavailable] = useState(false);
@@ -75,7 +96,7 @@ export function usePlaceSearch(center: Center) {
     setError(null);
   }
 
-  async function run(raw: string, mode: SearchMode, nearby: boolean) {
+  async function run(raw: string, mode: SearchMode, area: SearchScope) {
     const trimmed = raw.trim();
     if (trimmed.length < 2) {
       reset();
@@ -87,11 +108,13 @@ export function usePlaceSearch(center: Center) {
     setLoading(true);
     setError(null);
 
-    const useCenter = nearby && center.lat !== null && center.lng !== null;
+    const useCenter =
+      area.kind === "nearby" && center.lat !== null && center.lng !== null;
 
     try {
       const output = await searchPlaces(trimmed, {
         mode,
+        ...(area.kind === "view" ? { bbox: area.bounds } : {}),
         ...(useCenter ? { nearLat: center.lat, nearLng: center.lng } : {}),
       });
       if (current !== version.current) return;
@@ -137,7 +160,7 @@ export function usePlaceSearch(center: Center) {
       return;
     }
     timer.current = setTimeout(
-      () => void run(value, "suggest", nearbyOnly),
+      () => void run(value, "suggest", scope),
       PLACE_SEARCH_DEBOUNCE_MS,
     );
   }
@@ -145,17 +168,31 @@ export function usePlaceSearch(center: Center) {
   /** Enter / 검색 버튼 / 다시 시도: 기다리지 않고 전체 검색(full). */
   function submit() {
     clearTimer();
-    void run(query, "full", nearbyOnly);
+    void run(query, "full", scope);
   }
 
+  /** "여행지 주변만" 버튼: 켜져 있으면 제한 없음으로, 그 외(제한 없음 / 현 지도 범위)에는 여행지 주변으로. */
   function toggleNearby() {
-    const next = !nearbyOnly;
-    setNearbyOnly(next);
+    const next: SearchScope = nearbyOnly
+      ? { kind: "world" }
+      : { kind: "nearby" };
+    setScope(next);
     if (query.trim().length < 2) return;
     clearTimer();
     // 자동완성을 쓸 수 없는데 아직 검색을 확정하지 않았다면 기다립니다.
     if (suggestUnavailable && lastMode.current !== "full") return;
     void run(query, lastMode.current, next);
+  }
+
+  /**
+   * "현 지도에서 검색": 지금 보이는 지도 범위 안에서 전체 검색(full)을 합니다.
+   * 이후 입력 중 자동완성도 이 범위를 유지하고, "여행지 주변만"을 누르면 풀립니다.
+   */
+  function searchInView(bounds: MapBounds) {
+    const next: SearchScope = { kind: "view", bounds };
+    setScope(next);
+    clearTimer();
+    void run(query, "full", next);
   }
 
   /** 검색 결과를 모두 비웁니다. (장소를 골랐을 때) */
@@ -173,10 +210,14 @@ export function usePlaceSearch(center: Center) {
     error,
     hasSearched,
     nearbyOnly,
+    searchScope: scope.kind,
+    /** 영역에서 연 검색의 영역 범위 안에서 찾는 중인지 */
+    inArea: scope.kind === "view" && scope.source === "area",
     suggestUnavailable,
     changeQuery,
     submit,
     toggleNearby,
+    searchInView,
     clearResults,
   };
 }

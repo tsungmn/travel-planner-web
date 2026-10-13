@@ -14,11 +14,22 @@ import { useElementSize, useMediaQuery } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
 import { IconAlertCircle } from "@tabler/icons-react";
 
-import type { Flight, Lodging, PlaceResult, Stop, Trip } from "@/types";
+import type {
+  Flight,
+  Lodging,
+  MapBounds,
+  PlaceResult,
+  Stop,
+  Trip,
+  TripArea,
+  TripMode,
+} from "@/types";
 import {
+  createArea,
   createFlight,
   createLodging,
   createStop,
+  deleteArea,
   deleteFlight,
   deleteLodging,
   deleteStop,
@@ -28,20 +39,24 @@ import {
   getTrip,
   getUser,
   reorderStops,
+  updateArea,
   updateFlight,
   updateLodging,
   updateStop,
   updateTrip,
+  type AreaInput,
   type UserInfo,
 } from "@/lib/api";
 import { ApiError } from "@/lib/http";
 import { useAirports } from "@/lib/airports";
+import { areaBounds, areaDayLabel, conflictingDays } from "@/lib/areas";
 import {
   buildFlightStops,
   isAirportMarkerId,
   type FlightStop,
 } from "@/lib/flightStops";
 import { Header } from "@/components/common/Header";
+import { MAX_AREAS_PER_TRIP } from "@/constants/area";
 import { MAX_FLIGHTS_PER_TRIP, MAX_TRIP_DAYS } from "@/constants/trip";
 import classes from "./TripDetail.module.css";
 import { useDetailRoute } from "./hooks/useDetailRoute";
@@ -52,7 +67,14 @@ import {
 } from "./hooks/useBottomSheet";
 import { DetailLoading, DetailMessage } from "./modules/DetailState";
 import { SubScreen } from "./modules/SubScreen";
-import { TripMap, type FlyTarget, type MapInsets } from "./modules/TripMap";
+import type { AreaEditControl } from "./modules/AreaLayer";
+import type { AreaPatch } from "./modules/AreaSection/AreaEditor";
+import {
+  TripMap,
+  type FitTarget,
+  type FlyTarget,
+  type MapInsets,
+} from "./modules/TripMap";
 import { TripPanel, type SaveStatus } from "./modules/TripPanel";
 import type { FlightFormData } from "./modules/FlightForm";
 import type { LodgingFormData } from "./modules/LodgingForm";
@@ -63,7 +85,12 @@ type TripData = {
   stops: Stop[];
   lodgings: Lodging[];
   flights: Flight[];
+  areas: TripArea[];
 };
+
+/** 영역 패널과 지도 핸들이 바꾸는 값. 둘 다 같은 저장 큐를 씁니다. */
+type AreaPatchWithGeo = AreaPatch &
+  Partial<Pick<TripArea, "lat" | "lng" | "radius_m">>;
 
 type Coords = { lng: number; lat: number };
 
@@ -73,6 +100,8 @@ const AIRPORT_FOCUS_ZOOM = 11;
 
 /** 메모와 별칭은 입력이 이 시간 동안 멈추면 저장합니다. */
 const TEXT_SAVE_DELAY_MS = 700;
+/** 영역도 같습니다. 드래그가 끝나면 기다리지 않고 바로 저장합니다. */
+const AREA_SAVE_DELAY_MS = 700;
 
 type StopTextField = "memo" | "alias";
 
@@ -94,6 +123,8 @@ function saveErrorMessage(error: unknown): string {
         return "이 여행에는 항공편을 더 추가할 수 없어요.";
       case "too_many_lodgings":
         return "이 여행에는 숙소를 더 추가할 수 없어요.";
+      case "too_many_areas":
+        return "이 여행에는 영역을 더 추가할 수 없어요.";
       case "stops_out_of_range":
         return "줄어든 기간을 벗어나는 일차에 장소가 있어요. 장소를 옮기거나 지운 뒤 다시 시도해 주세요.";
       case "day_out_of_range":
@@ -149,9 +180,21 @@ function TripDetailContent({ id }: { id: string }) {
   );
   const [newStopId, setNewStopId] = useState<string | null>(null);
 
+  // 러프 계획(영역)
+  const [selectedAreaId, setSelectedAreaId] = useState<string | null>(null);
+  const [newAreaId, setNewAreaId] = useState<string | null>(null);
+  const [addAreaMode, setAddAreaMode] = useState(false);
+  // 계획 모드에서 영역을 지도에 옅게 깔지. (영역이 있으면 기본으로 보여줍니다)
+  const [showAreas, setShowAreas] = useState(true);
+  const [fitTo, setFitTo] = useState<FitTarget | null>(null);
+
   const [preview, setPreview] = useState<PlaceResult | null>(null);
   const [flyTo, setFlyTo] = useState<FlyTarget | null>(null);
   const [pickActive, setPickActive] = useState(false);
+  // 장소 검색 뒤 사용자가 지도를 움직였을 때의 범위. "현 지도에서 검색"이 이 범위를 씁니다.
+  const [movedBounds, setMovedBounds] = useState<MapBounds | null>(null);
+  // 지도 위에 컨트롤을 띄우는 층. 장소 검색 화면(패널 안)이 포털로 버튼을 그립니다.
+  const [mapOverlay, setMapOverlay] = useState<HTMLDivElement | null>(null);
 
   const newStopTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pickCallback = useRef<((coords: Coords) => void) | null>(null);
@@ -184,6 +227,7 @@ function TripDetailContent({ id }: { id: string }) {
                   stops: result.stops,
                   lodgings: result.lodgings,
                   flights: result.flights,
+                  areas: result.areas,
                 }
               : null,
           ),
@@ -248,6 +292,14 @@ function TripDetailContent({ id }: { id: string }) {
     >(),
   );
 
+  // 편집 중인 영역의 바뀐 값. 입력이 멈추거나 드래그가 끝나면 한 번만 저장합니다. (키: 영역 id)
+  const areaQueue = useRef(
+    new Map<
+      string,
+      { timer: ReturnType<typeof setTimeout>; patch: AreaPatchWithGeo }
+    >(),
+  );
+
   useEffect(() => {
     dataRef.current = data;
   }, [data]);
@@ -292,6 +344,18 @@ function TripDetailContent({ id }: { id: string }) {
     [reload],
   );
 
+  // 화면을 떠날 때 아직 보내지 않은 영역 변경을 보냅니다.
+  useEffect(() => {
+    const queued = areaQueue.current;
+    return () => {
+      for (const [areaId, entry] of queued) {
+        clearTimeout(entry.timer);
+        void updateArea(id, areaId, entry.patch).catch(() => undefined);
+      }
+      queued.clear();
+    };
+  }, [id]);
+
   // 화면을 떠날 때 아직 보내지 않은 메모/별칭을 보냅니다.
   useEffect(() => {
     const queued = textQueue.current;
@@ -320,6 +384,12 @@ function TripDetailContent({ id }: { id: string }) {
     [patchData],
   );
 
+  const patchAreas = useCallback(
+    (updater: (areas: TripArea[]) => TripArea[]) =>
+      patchData((current) => ({ ...current, areas: updater(current.areas) })),
+    [patchData],
+  );
+
   // 항공편이 있을 때만 공항 목록을 불러와, 출발·도착 공항을 일정에 붙입니다.
   const airports = useAirports({ enabled: (data?.flights.length ?? 0) > 0 });
   const airportIndex = airports.index;
@@ -338,6 +408,9 @@ function TripDetailContent({ id }: { id: string }) {
       ? route.selectedDay
       : null;
   const subView = route.view;
+  const mode = route.mode;
+  // 영역 그리기는 러프 모드에서 서브 화면이 닫혀 있을 때만 유효합니다.
+  const areaAddMode = addAreaMode && mode === "rough" && !subView;
   // 지도 선택 모드는 숙소 폼이나 장소 검색이 열려 있을 때만 유효합니다.
   const pickMode =
     pickActive && (subView === "lodging" || subView === "search");
@@ -392,10 +465,16 @@ function TripDetailContent({ id }: { id: string }) {
     if (newStopTimer.current) clearTimeout(newStopTimer.current);
     newStopTimer.current = setTimeout(() => setNewStopId(null), 1500);
     setPreview(null);
-    notifications.show({
-      message: `${dayIndex + 1}일차에 추가했어요.`,
-      color: "teal",
-    });
+    // 러프 계획과 어긋나면(다른 일차 영역 안의 장소) 알려 줍니다. 추가는 막지 않아요.
+    const conflicts = conflictingDays(place, dayIndex, data.areas);
+    notifications.show(
+      conflicts
+        ? {
+            message: `${dayIndex + 1}일차에 추가했어요. 다만 ${conflicts.map(areaDayLabel).join(", ")} 영역 안에 있는 장소예요.`,
+            color: "yellow",
+          }
+        : { message: `${dayIndex + 1}일차에 추가했어요.`, color: "teal" },
+    );
     return true;
   }
 
@@ -551,6 +630,125 @@ function TripDetailContent({ id }: { id: string }) {
       ),
     );
   }
+
+  // ----- 영역(러프 계획) -----
+
+  function handleModeChange(next: TripMode) {
+    setAddAreaMode(false);
+    setSelectedAreaId(null);
+    setNewAreaId(null);
+    route.setMode(next);
+  }
+
+  /** 지도에 보이는 영역은 화면에 먼저 반영하고, 저장은 입력이 멈춘 뒤(또는 드래그가 끝난 뒤) 한 번만 보냅니다. */
+  function editArea(areaId: string, patch: AreaPatchWithGeo) {
+    patchAreas((areas) =>
+      areas.map((area) => (area.id === areaId ? { ...area, ...patch } : area)),
+    );
+    const queued = areaQueue.current;
+    const previous = queued.get(areaId);
+    if (previous) clearTimeout(previous.timer);
+    queued.set(areaId, {
+      timer: setTimeout(() => flushArea(areaId), AREA_SAVE_DELAY_MS),
+      patch: { ...previous?.patch, ...patch },
+    });
+  }
+
+  function flushArea(areaId: string) {
+    const queued = areaQueue.current;
+    const entry = queued.get(areaId);
+    if (!entry) return;
+    clearTimeout(entry.timer);
+    queued.delete(areaId);
+    void save(() => updateArea(id, areaId, entry.patch));
+  }
+
+  function handleToggleAddArea() {
+    const next = !areaAddMode;
+    setAddAreaMode(next);
+    if (!next) return;
+    setSelectedAreaId(null);
+    // 모바일에서는 시트를 접어 지도를 보이게 합니다.
+    if (!isDesktop) sheet.setSnap(0);
+  }
+
+  async function handleAddArea(lat: number, lng: number, radiusM: number) {
+    setAddAreaMode(false);
+    if (!data) return;
+    if (data.areas.length >= MAX_AREAS_PER_TRIP) {
+      notifications.show({
+        message: `영역은 한 여행에 최대 ${MAX_AREAS_PER_TRIP}개까지 추가할 수 있어요.`,
+        color: "red",
+      });
+      return;
+    }
+    const input: AreaInput = {
+      day_index: selectedDay,
+      label: "",
+      lat,
+      lng,
+      radius_m: radiusM,
+      memo: null,
+    };
+    const created = await save(() => createArea(id, input));
+    if (!created) return;
+    patchAreas((areas) => [...areas, created]);
+    setSelectedAreaId(created.id);
+    setNewAreaId(created.id);
+    // 이름을 바로 적을 수 있게 시트를 펼칩니다.
+    sheet.setSnap((snap) => (snap === 0 ? 1 : snap));
+  }
+
+  /** 목록에서 영역을 고르면 그 영역으로 지도를 맞춥니다. */
+  function handleSelectArea(areaId: string | null) {
+    setSelectedAreaId(areaId);
+    setNewAreaId(null);
+    const area = areaId ? data?.areas.find((a) => a.id === areaId) : null;
+    if (area) setFitTo(areaBounds(area));
+  }
+
+  /** 지도에서 영역을 눌렀을 때는 지도를 움직이지 않습니다. */
+  function handleSelectAreaOnMap(areaId: string | null) {
+    setSelectedAreaId(areaId);
+    setNewAreaId(null);
+    if (areaId) sheet.setSnap((snap) => (snap === 0 ? 1 : snap));
+  }
+
+  async function handleDeleteArea(areaId: string) {
+    const queued = areaQueue.current.get(areaId);
+    if (queued) {
+      clearTimeout(queued.timer);
+      areaQueue.current.delete(areaId);
+    }
+    patchAreas((areas) => areas.filter((area) => area.id !== areaId));
+    setSelectedAreaId(null);
+    await save(async () => {
+      await deleteArea(id, areaId);
+      return true;
+    });
+  }
+
+  /** 영역에서 장소 검색: 계획 모드의 장소 추가 화면을 그 영역 범위로 엽니다. */
+  function handleSearchInArea(area: TripArea) {
+    setAddAreaMode(false);
+    setSelectedAreaId(null);
+    setNewAreaId(null);
+    setFitTo(areaBounds(area));
+    route.openView("search", {
+      id: area.id,
+      mode: "plan",
+      day: area.day_index,
+    });
+  }
+
+  const areaEdit: AreaEditControl = {
+    selectedId: selectedAreaId,
+    addMode: areaAddMode,
+    onSelect: handleSelectAreaOnMap,
+    onAdd: handleAddArea,
+    onChange: editArea,
+    onCommit: flushArea,
+  };
 
   // ----- 항공편 -----
 
@@ -796,7 +994,7 @@ function TripDetailContent({ id }: { id: string }) {
     );
   if (!data) notFound();
 
-  const { trip, stops, lodgings, flights } = data;
+  const { trip, stops, lodgings, flights, areas } = data;
 
   return (
     <Box className={classes.page}>
@@ -828,12 +1026,25 @@ function TripDetailContent({ id }: { id: string }) {
                 lodgings={lodgings}
                 flights={flights}
                 flightStops={flightStops}
+                areas={areas}
+                mode={mode}
+                showAreas={showAreas}
+                selectedAreaId={selectedAreaId}
+                newAreaId={newAreaId}
+                addAreaMode={areaAddMode}
                 selectedDay={selectedDay}
                 saveStatus={saveStatus}
                 expandedStopId={expandedStopId}
                 hoveredStopId={hoveredId}
                 highlightedStopId={newStopId}
                 listRef={stopListRef}
+                onModeChange={handleModeChange}
+                onShowAreasChange={setShowAreas}
+                onSelectArea={handleSelectArea}
+                onToggleAddArea={handleToggleAddArea}
+                onChangeArea={editArea}
+                onDeleteArea={handleDeleteArea}
+                onSearchInArea={handleSearchInArea}
                 onSelectDay={route.setDay}
                 onToggleStop={handleToggleStop}
                 onHoverStop={setHoveredId}
@@ -869,6 +1080,7 @@ function TripDetailContent({ id }: { id: string }) {
                   stops={stops}
                   lodgings={lodgings}
                   flights={flights}
+                  areas={areas}
                   selectedDay={selectedDay}
                   onClose={route.closeView}
                   onAddPlace={handleAddPlace}
@@ -882,6 +1094,11 @@ function TripDetailContent({ id }: { id: string }) {
                   onGoToDay={route.closeViewToDay}
                   pickMode={pickMode}
                   onPickModeChange={handlePickModeChange}
+                  mapSearch={{
+                    overlay: mapOverlay,
+                    movedBounds,
+                    onConsume: () => setMovedBounds(null),
+                  }}
                 />
               </Box>
             )}
@@ -893,16 +1110,41 @@ function TripDetailContent({ id }: { id: string }) {
             trip={trip}
             stops={stops}
             lodgings={lodgings}
+            areas={areas}
+            mode={mode}
+            showAreas={showAreas}
+            areaEdit={areaEdit}
             flightStops={flightStops}
             selectedDay={selectedDay}
             hoveredId={hoveredId}
             highlightedId={highlightedMarkerId}
             preview={visiblePreview}
             flyTo={flyTo}
+            fitTo={fitTo}
             insets={insets}
             pickMode={pickMode}
             onMarkerClick={handleMarkerClick}
             onMapClick={handleMapClick}
+            onViewChange={setMovedBounds}
+          />
+          {areaAddMode && (
+            <div className={classes.areaBanner} role="status">
+              <span className={classes.areaBannerDot} aria-hidden="true" />
+              지도에서 중심점을 누른 뒤, 반경을 눌러 주세요
+              <Button
+                size="compact-xs"
+                variant="subtle"
+                color="gray"
+                onClick={() => setAddAreaMode(false)}
+              >
+                취소
+              </Button>
+            </div>
+          )}
+          <div
+            ref={setMapOverlay}
+            className={classes.mapOverlay}
+            style={{ paddingTop: insets.top }}
           />
         </Box>
       </Box>

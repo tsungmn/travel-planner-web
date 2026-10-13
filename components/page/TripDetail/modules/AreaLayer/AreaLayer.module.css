@@ -1,0 +1,89 @@
+/* 지도 위 영역 라벨·핸들은 모두 Marker 안에 놓입니다. 클릭은 지도(영역 선택)와 핸들만 받습니다. */
+
+.label {
+  max-width: 200px;
+  padding: 3px 10px;
+  border: 2px solid var(--area-color, #6b7280);
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 1px 4px rgb(0 0 0 / 15%);
+  color: #1f2937;
+  font-family: var(--mantine-font-family);
+  font-size: 12px;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  user-select: none;
+  transition: opacity 200ms ease;
+}
+.label[data-selected] {
+  box-shadow: 0 2px 8px rgb(0 0 0 / 25%);
+}
+.label[data-empty] {
+  color: #6b7280;
+  font-weight: 500;
+}
+.label[data-dimmed] {
+  opacity: 0.35;
+}
+
+.dayChip {
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: var(--area-color, #6b7280);
+  color: #fff;
+  font-family: var(--mantine-font-family);
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+  user-select: none;
+  transition: opacity 200ms ease;
+}
+.dayChip[data-dimmed] {
+  opacity: 0.35;
+}
+
+.handle {
+  width: 20px;
+  height: 20px;
+  border: 3px solid var(--area-color, #6b7280);
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 4px rgb(0 0 0 / 30%);
+  touch-action: none;
+}
+.handleMove {
+  cursor: grab;
+}
+.handleMove:active {
+  cursor: grabbing;
+}
+.handleResize {
+  cursor: ew-resize;
+}
+
+.radiusBadge {
+  position: absolute;
+  bottom: 24px;
+  left: 50%;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: rgb(31 41 55 / 90%);
+  color: #fff;
+  font-family: var(--mantine-font-family);
+  font-size: 11px;
+  font-weight: 600;
+  pointer-events: none;
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+
+.previewDot {
+  width: 14px;
+  height: 14px;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: #6b7280;
+  box-shadow: 0 1px 4px rgb(0 0 0 / 25%);
+}

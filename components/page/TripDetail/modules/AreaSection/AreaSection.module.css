@@ -1,0 +1,62 @@
+.dayHeading {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0;
+  margin-bottom: 0.25rem;
+}
+.dayDot {
+  width: 0.5rem;
+  height: 0.5rem;
+  flex: 0 0 auto;
+  border-radius: 50%;
+}
+.flexible {
+  min-width: 0;
+  flex: 1;
+}
+
+.item {
+  transition:
+    border-color 150ms ease,
+    box-shadow 150ms ease,
+    background-color 150ms ease;
+}
+.item[data-selected] {
+  border-color: var(--area-color);
+  box-shadow: var(--mantine-shadow-xs);
+}
+.itemHeader {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 0.625rem;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.itemHeader:focus-visible {
+  outline: 2px solid var(--mantine-primary-color-filled);
+  outline-offset: 2px;
+}
+.itemDot {
+  width: 0.625rem;
+  height: 0.625rem;
+  flex: 0 0 auto;
+  border-radius: 50%;
+}
+.itemEmpty {
+  font-style: italic;
+}
+
+.editor {
+  padding-top: var(--mantine-spacing-sm);
+  margin-top: var(--mantine-spacing-sm);
+  border-top: 1px solid var(--mantine-color-default-border);
+}
+
+.empty {
+  padding: var(--mantine-spacing-xl) var(--mantine-spacing-md);
+  text-align: center;
+}

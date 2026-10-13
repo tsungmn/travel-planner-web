@@ -1,4 +1,9 @@
-import { TripMap, type FlyTarget, type MapInsets } from "./TripMap";
+import {
+  TripMap,
+  type FitTarget,
+  type FlyTarget,
+  type MapInsets,
+} from "./TripMap";
 
 export { TripMap };
-export type { FlyTarget, MapInsets };
+export type { FitTarget, FlyTarget, MapInsets };
