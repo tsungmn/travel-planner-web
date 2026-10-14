@@ -84,6 +84,7 @@ type TripPanelProps = {
   onEditLodging: (lodging: Lodging) => void;
   onFocusLodging: (lodging: Lodging) => void;
   onFocusFlightStop: (stop: FlightStop) => void;
+  /** 계획 모드의 「장소 추가」 */
   onOpenSearch: () => void;
 };
 

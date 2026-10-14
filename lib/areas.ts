@@ -84,6 +84,14 @@ export function areaEastPoint(area: TripArea): Located {
   return { lat: area.lat, lng: area.lng + area.radius_m * lngPerMeter };
 }
 
+/** 원의 위쪽 둘레 지점. 영역 이름 라벨이 놓입니다. */
+export function areaNorthPoint(area: TripArea): Located {
+  return {
+    lat: area.lat + area.radius_m / METERS_PER_DEGREE_LAT,
+    lng: area.lng,
+  };
+}
+
 export function areaBounds(area: TripArea): MapBounds {
   const dLat = area.radius_m / METERS_PER_DEGREE_LAT;
   const dLng =
@@ -155,12 +163,14 @@ export function dayOutline(
   };
 }
 
-/** 외곽선 칩을 놓을 왼쪽 위 모서리. */
+/** 외곽선 위쪽에 칩을 놓을 실제 꼭짓점. */
 export function ringTopLeft(ring: LngLat[]): Located {
-  return {
-    lng: Math.min(...ring.map((p) => p[0])),
-    lat: Math.max(...ring.map((p) => p[1])),
-  };
+  const top = Math.max(...ring.map((p) => p[1]));
+  const topPoints = ring.filter((point) => point[1] === top);
+  const point = topPoints.reduce((left, current) =>
+    current[0] < left[0] ? current : left,
+  );
+  return { lng: point[0], lat: point[1] };
 }
 
 /* ───────── 영역 ↔ 장소 ───────── */

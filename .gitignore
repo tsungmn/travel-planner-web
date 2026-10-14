@@ -50,3 +50,6 @@ storybook-static
 /.fttemplates/
 
 /data/
+
+*.zip
+*.patch

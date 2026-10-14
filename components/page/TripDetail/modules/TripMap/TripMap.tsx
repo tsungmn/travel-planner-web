@@ -6,7 +6,7 @@ import type { CSSProperties } from "react";
 import { Layer, Marker, Source } from "react-map-gl/maplibre";
 import type { MapRef } from "react-map-gl/maplibre";
 import { Center, Loader } from "@mantine/core";
-import { IconHome, IconPlane } from "@tabler/icons-react";
+import { IconHome, IconPinFilled, IconPlane } from "@tabler/icons-react";
 
 import type {
   Lodging,
@@ -43,6 +43,18 @@ export type MapInsets = {
 };
 
 export type FlyTarget = { lng: number; lat: number; zoom: number };
+
+/** 러프 모드의 「장소 찾기」 결과 마커. 저장되지 않는 임시 표시입니다. */
+export type FinderControl = {
+  places: PlaceResult[];
+  /** 고정해 둔 장소. 검색을 새로 해도 남고, 이름이 항상 보입니다. */
+  pinned: PlaceResult[];
+  /** 지금 고른 결과. 이 마커만 이름표가 붙고 강조됩니다. */
+  activeId: string | null;
+  /** false면 마커가 클릭을 받지 않습니다. (영역을 그리는 중에는 마커 위를 눌러도 지도가 눌려야 합니다) */
+  interactive: boolean;
+  onSelect: (place: PlaceResult) => void;
+};
 /** 이 범위가 보이도록 지도를 맞춥니다. (객체가 새로 만들어질 때마다 한 번 움직입니다) */
 export type FitTarget = MapBounds;
 
@@ -68,6 +80,8 @@ type TripMapProps = {
   highlightedId: string | null;
   /** 검색 결과 / 숙소 위치 미리보기 */
   preview: PlaceResult | null;
+  /** 러프 모드에서만 그립니다. */
+  finder?: FinderControl;
   flyTo: FlyTarget | null;
   fitTo?: FitTarget | null;
   /** 패널·바텀시트에 가려지는 영역 */
@@ -190,6 +204,7 @@ export function TripMap({
   hoveredId,
   highlightedId,
   preview,
+  finder,
   flyTo,
   fitTo,
   insets,
@@ -437,7 +452,15 @@ export function TripMap({
               latitude={pin.lat}
               style={{ pointerEvents: "none" }}
             >
-              <span className={classes.roughDot} aria-hidden="true" />
+              <span
+                className={classes.roughDot}
+                style={
+                  {
+                    "--marker-color": getDayColor(pin.dayIndex).hex,
+                  } as CSSProperties
+                }
+                aria-hidden="true"
+              />
             </Marker>
           );
         }
@@ -527,6 +550,80 @@ export function TripMap({
           </Marker>
         );
       })}
+
+      {rough &&
+        finder?.places.map((place, index) => {
+          // 고정한 장소는 아래에서 따로 그리니, 같은 자리에 겹쳐 그리지 않습니다.
+          if (
+            finder.pinned.some(
+              (p) => p.provider_place_id === place.provider_place_id,
+            )
+          )
+            return null;
+          const active = place.provider_place_id === finder.activeId;
+          return (
+            <Marker
+              key={place.provider_place_id}
+              longitude={place.lng}
+              latitude={place.lat}
+              // 영역 핸들(10)보다 위, 이름표가 있는 마커는 가장 위에 놓습니다.
+              style={{
+                zIndex: active ? 12 : 6,
+                pointerEvents: finder.interactive ? undefined : "none",
+              }}
+              onClick={(event) => {
+                event.originalEvent.stopPropagation();
+                finder.onSelect(place);
+              }}
+            >
+              <div className={classes.finderWrap}>
+                <button
+                  type="button"
+                  className={classes.finder}
+                  data-active={active || undefined}
+                  aria-label={`${index + 1}번 ${place.name}`}
+                >
+                  {index + 1}
+                </button>
+                {active && (
+                  <div className={classes.finderLabel}>{place.name}</div>
+                )}
+              </div>
+            </Marker>
+          );
+        })}
+
+      {rough &&
+        finder?.pinned.map((place) => {
+          const active = place.provider_place_id === finder.activeId;
+          return (
+            <Marker
+              key={`pinned-${place.provider_place_id}`}
+              longitude={place.lng}
+              latitude={place.lat}
+              style={{
+                zIndex: active ? 12 : 8,
+                pointerEvents: finder.interactive ? undefined : "none",
+              }}
+              onClick={(event) => {
+                event.originalEvent.stopPropagation();
+                finder.onSelect(place);
+              }}
+            >
+              <div className={classes.finderWrap}>
+                <button
+                  type="button"
+                  className={classes.finderPin}
+                  data-active={active || undefined}
+                  aria-label={`고정한 장소 ${place.name}`}
+                >
+                  <IconPinFilled size={14} aria-hidden="true" />
+                </button>
+                <div className={classes.finderLabel}>{place.name}</div>
+              </div>
+            </Marker>
+          );
+        })}
 
       {preview && (
         <Marker longitude={preview.lng} latitude={preview.lat}>

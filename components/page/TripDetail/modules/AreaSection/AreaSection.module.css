@@ -56,6 +56,27 @@
   border-top: 1px solid var(--mantine-color-default-border);
 }
 
+.editorActions {
+  align-items: center;
+  padding-top: 0.25rem;
+}
+.deleteButton {
+  border-radius: 0.5rem;
+  opacity: 0.82;
+}
+.deleteButton:hover {
+  background: var(--mantine-color-red-0);
+  opacity: 1;
+}
+.doneButton {
+  min-width: 5rem;
+  border-radius: 0.5rem;
+  box-shadow: 0 2px 6px rgb(15 118 110 / 20%);
+}
+.deleteConfirm {
+  flex-wrap: wrap;
+}
+
 .empty {
   padding: var(--mantine-spacing-xl) var(--mantine-spacing-md);
   text-align: center;

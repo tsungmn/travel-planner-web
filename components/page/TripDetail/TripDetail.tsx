@@ -60,12 +60,18 @@ import { MAX_AREAS_PER_TRIP } from "@/constants/area";
 import { MAX_FLIGHTS_PER_TRIP, MAX_TRIP_DAYS } from "@/constants/trip";
 import classes from "./TripDetail.module.css";
 import { useDetailRoute } from "./hooks/useDetailRoute";
+import { usePlaceSearch } from "./hooks/usePlaceSearch";
 import {
   getSheetHeight,
   useBottomSheet,
   type SheetSnap,
 } from "./hooks/useBottomSheet";
 import { DetailLoading, DetailMessage } from "./modules/DetailState";
+import {
+  FINDER_MAX_PINNED,
+  FINDER_MAX_RESULTS,
+  PlaceFinder,
+} from "./modules/PlaceFinder";
 import { SubScreen } from "./modules/SubScreen";
 import type { AreaEditControl } from "./modules/AreaLayer";
 import type { AreaPatch } from "./modules/AreaSection/AreaEditor";
@@ -187,6 +193,17 @@ function TripDetailContent({ id }: { id: string }) {
   // 계획 모드에서 영역을 지도에 옅게 깔지. (영역이 있으면 기본으로 보여줍니다)
   const [showAreas, setShowAreas] = useState(true);
   const [fitTo, setFitTo] = useState<FitTarget | null>(null);
+
+  // 러프 모드 「장소 찾기」: 영역을 고르기 위해 위치만 확인하는 임시 표시입니다. 저장하지 않아요.
+  const finder = usePlaceSearch({
+    lat: data?.trip.dest_lat ?? null,
+    lng: data?.trip.dest_lng ?? null,
+  });
+  const [finderActiveId, setFinderActiveId] = useState<string | null>(null);
+  // 결과에서 고정해 둔 장소. 새로 검색해도 남고, 저장하지 않습니다.
+  const [finderPinned, setFinderPinned] = useState<PlaceResult[]>([]);
+  // 영역을 만들면 찾기 마커를 자동으로 지울지
+  const [finderAutoClear, setFinderAutoClear] = useState(true);
 
   const [preview, setPreview] = useState<PlaceResult | null>(null);
   const [flyTo, setFlyTo] = useState<FlyTarget | null>(null);
@@ -416,6 +433,14 @@ function TripDetailContent({ id }: { id: string }) {
     pickActive && (subView === "lodging" || subView === "search");
   const visiblePreview =
     subView === "search" || subView === "lodging" ? preview : null;
+  // 장소 찾기는 러프 모드에서 서브 화면이 닫혀 있을 때만 보입니다.
+  const finderOpen = mode === "rough" && !subView;
+  const finderPlaces = finder.results.slice(0, FINDER_MAX_RESULTS);
+  const finderActive = [...finderPlaces, ...finderPinned].some(
+    (place) => place.provider_place_id === finderActiveId,
+  )
+    ? finderActiveId
+    : null;
 
   // 서브 화면이 열리면 시트 높이가 따로 정해지고, 닫으면 사용자가 둔 단계로 돌아옵니다.
   const sheetSnap: SheetSnap = subView
@@ -637,7 +662,63 @@ function TripDetailContent({ id }: { id: string }) {
     setAddAreaMode(false);
     setSelectedAreaId(null);
     setNewAreaId(null);
+    clearFinder();
     route.setMode(next);
+  }
+
+  // ----- 장소 찾기 (러프) -----
+
+  /** 검색어와 검색 결과 마커를 지웁니다. 고정한 장소는 남깁니다. */
+  function clearFinderSearch() {
+    finder.clearResults();
+    setFinderActiveId(null);
+  }
+
+  /** 검색 결과와 고정한 장소를 모두 지웁니다. (영역을 만들었을 때, 러프를 벗어날 때) */
+  function clearFinder() {
+    clearFinderSearch();
+    setFinderPinned([]);
+  }
+
+  /** 고정한 장소만 지웁니다. */
+  function clearFinderPinned() {
+    setFinderPinned([]);
+    setFinderActiveId(null);
+  }
+
+  function handleFinderTogglePin(place: PlaceResult) {
+    const id = place.provider_place_id;
+    if (finderPinned.some((p) => p.provider_place_id === id)) {
+      setFinderPinned(finderPinned.filter((p) => p.provider_place_id !== id));
+      return;
+    }
+    if (finderPinned.length >= FINDER_MAX_PINNED) {
+      notifications.show({
+        message: `고정은 최대 ${FINDER_MAX_PINNED}개까지 할 수 있어요.`,
+        color: "red",
+      });
+      return;
+    }
+    setFinderPinned([...finderPinned, place]);
+  }
+
+  /** 고정한 장소가 모두 보이도록 지도를 맞춥니다. */
+  function handleFinderFitPinned() {
+    if (finderPinned.length === 0) return;
+    const lngs = finderPinned.map((place) => place.lng);
+    const lats = finderPinned.map((place) => place.lat);
+    setFitTo({
+      west: Math.min(...lngs),
+      south: Math.min(...lats),
+      east: Math.max(...lngs),
+      north: Math.max(...lats),
+    });
+  }
+
+  /** 결과를 누르면 그 위치로 지도를 옮기고 표시만 합니다. 아무것도 추가하거나 저장하지 않아요. */
+  function handleFinderSelect(place: PlaceResult) {
+    setFinderActiveId(place.provider_place_id);
+    setFlyTo({ lng: place.lng, lat: place.lat, zoom: FOCUS_ZOOM });
   }
 
   /** 지도에 보이는 영역은 화면에 먼저 반영하고, 저장은 입력이 멈춘 뒤(또는 드래그가 끝난 뒤) 한 번만 보냅니다. */
@@ -695,6 +776,7 @@ function TripDetailContent({ id }: { id: string }) {
     patchAreas((areas) => [...areas, created]);
     setSelectedAreaId(created.id);
     setNewAreaId(created.id);
+    if (finderAutoClear) clearFinder();
     // 이름을 바로 적을 수 있게 시트를 펼칩니다.
     sheet.setSnap((snap) => (snap === 0 ? 1 : snap));
   }
@@ -733,6 +815,7 @@ function TripDetailContent({ id }: { id: string }) {
     setAddAreaMode(false);
     setSelectedAreaId(null);
     setNewAreaId(null);
+    clearFinder();
     setFitTo(areaBounds(area));
     route.openView("search", {
       id: area.id,
@@ -1119,6 +1202,14 @@ function TripDetailContent({ id }: { id: string }) {
             hoveredId={hoveredId}
             highlightedId={highlightedMarkerId}
             preview={visiblePreview}
+            finder={{
+              places: finderPlaces,
+              pinned: finderPinned,
+              activeId: finderActive,
+              // 영역을 그리는 중에는 마커 위를 눌러도 지도가 눌려야 합니다.
+              interactive: !areaAddMode,
+              onSelect: handleFinderSelect,
+            }}
             flyTo={flyTo}
             fitTo={fitTo}
             insets={insets}
@@ -1127,18 +1218,46 @@ function TripDetailContent({ id }: { id: string }) {
             onMapClick={handleMapClick}
             onViewChange={setMovedBounds}
           />
-          {areaAddMode && (
-            <div className={classes.areaBanner} role="status">
-              <span className={classes.areaBannerDot} aria-hidden="true" />
-              지도에서 중심점을 누른 뒤, 반경을 눌러 주세요
-              <Button
-                size="compact-xs"
-                variant="subtle"
-                color="gray"
-                onClick={() => setAddAreaMode(false)}
-              >
-                취소
-              </Button>
+          {finderOpen && (
+            <div className={classes.mapTools}>
+              {areaAddMode && (
+                <div className={classes.areaBanner} role="status">
+                  <span className={classes.areaBannerDot} aria-hidden="true" />
+                  지도에서 중심점을 누른 뒤, 반경을 눌러 주세요
+                  <Button
+                    size="compact-xs"
+                    variant="subtle"
+                    color="gray"
+                    onClick={() => setAddAreaMode(false)}
+                  >
+                    취소
+                  </Button>
+                </div>
+              )}
+              <PlaceFinder
+                query={finder.query}
+                places={finderPlaces}
+                loading={finder.loading}
+                error={finder.error}
+                hasSearched={finder.hasSearched}
+                nearbyOnly={finder.nearbyOnly}
+                needsSubmit={
+                  finder.suggestUnavailable && finder.query.trim().length >= 2
+                }
+                pinned={finderPinned}
+                activeId={finderActive}
+                autoClear={finderAutoClear}
+                compact={!isDesktop}
+                onQueryChange={finder.changeQuery}
+                onSubmit={finder.submit}
+                onToggleNearby={finder.toggleNearby}
+                onSelect={handleFinderSelect}
+                onTogglePin={handleFinderTogglePin}
+                onFitPinned={handleFinderFitPinned}
+                onClearPinned={clearFinderPinned}
+                onAutoClearChange={setFinderAutoClear}
+                onClear={clearFinderSearch}
+              />
             </div>
           )}
           <div

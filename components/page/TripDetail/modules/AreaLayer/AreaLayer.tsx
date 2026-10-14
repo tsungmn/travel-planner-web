@@ -11,6 +11,7 @@ import { AREA_DEFAULT_RADIUS_M } from "@/constants/area";
 import {
   areaColor,
   areaEastPoint,
+  areaNorthPoint,
   areaPolygon,
   areaTitle,
   circleRing,
@@ -123,13 +124,23 @@ export function AreaLayer({
       {rough && (
         <Source id={OUTLINE_SOURCE} type="geojson" data={outlineCollection}>
           <Layer
+            id="trip-day-outline-fill"
+            type="fill"
+            paint={{
+              "fill-color": ["get", "color"],
+              "fill-opacity": ["case", ["get", "dimmed"], 0.012, 0.035],
+            }}
+          />
+          <Layer
             id="trip-day-outline-line"
             type="line"
+            layout={{ "line-join": "round", "line-cap": "round" }}
             paint={{
               "line-color": ["get", "color"],
-              "line-width": 3,
-              "line-dasharray": [4, 3],
-              "line-opacity": ["case", ["get", "dimmed"], 0.25, 0.8],
+              "line-width": 2,
+              "line-dasharray": [2, 3],
+              "line-opacity": ["case", ["get", "dimmed"], 0.18, 0.48],
+              "line-blur": 0.25,
             }}
           />
         </Source>
@@ -206,14 +217,14 @@ export function AreaLayer({
         areas.map((area) => {
           const selected = area.id === selectedId;
           const empty = area.label.trim() === "";
+          const north = areaNorthPoint(area);
           return (
             <Marker
               key={`label-${area.id}`}
-              longitude={area.lng}
-              latitude={area.lat}
-              // 선택되면 가운데에 이동 핸들이 놓이므로 라벨은 그 위로 올립니다.
-              anchor={selected ? "bottom" : "center"}
-              offset={selected ? [0, -14] : [0, 0]}
+              longitude={north.lng}
+              latitude={north.lat}
+              anchor="bottom"
+              offset={[0, -6]}
               style={{ pointerEvents: "none", zIndex: selected ? 5 : 3 }}
             >
               <div

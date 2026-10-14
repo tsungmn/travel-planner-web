@@ -1,0 +1,124 @@
+/* 지도 위에 뜨는 검색 상자. 부모(mapTools)는 클릭을 통과시키므로 이 상자만 클릭을 받습니다. */
+.root {
+  width: min(22rem, 100%);
+  overflow: hidden;
+  pointer-events: auto;
+}
+
+.input {
+  padding-right: 4rem;
+  font-size: var(--mantine-font-size-sm);
+}
+
+.card {
+  border-top: 1px solid var(--mantine-color-default-border);
+}
+
+.scope {
+  padding: 0.375rem 0.625rem;
+}
+
+.message {
+  padding: 0.75rem 0.875rem;
+}
+
+.list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  padding-right: 0.5rem;
+  transition: background-color 150ms ease;
+}
+.row:hover {
+  background: var(--mantine-color-default-hover);
+}
+.row[data-active] {
+  background: var(--mantine-color-indigo-light);
+}
+
+.item {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.5rem 0.5rem 0.5rem 0.75rem;
+}
+
+.pinButton {
+  flex: 0 0 auto;
+}
+
+/* 고정한 장소 칩 */
+.pins {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.375rem 0.5rem;
+  border-top: 1px solid var(--mantine-color-default-border);
+}
+
+.chip {
+  display: inline-flex;
+  max-width: 100%;
+  align-items: center;
+  gap: 2px;
+  padding: 2px 4px 2px 10px;
+  border: 1px solid var(--mantine-color-indigo-3);
+  border-radius: 999px;
+  background: var(--mantine-color-indigo-light);
+  font-size: var(--mantine-font-size-xs);
+  font-weight: 600;
+}
+.chip[data-active] {
+  border-color: var(--mantine-color-indigo-6);
+}
+
+.chipName {
+  max-width: 9rem;
+  overflow: hidden;
+  font-size: inherit;
+  font-weight: inherit;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pinActions {
+  margin-left: auto;
+}
+
+.text {
+  min-width: 0;
+  flex: 1;
+}
+
+/* 지도 마커와 같은 번호 배지 */
+.number {
+  display: flex;
+  width: 1.375rem;
+  height: 1.375rem;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--mantine-color-indigo-6);
+  border-radius: 50%;
+  color: var(--mantine-color-indigo-7);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  line-height: 1;
+}
+.row[data-active] .number {
+  background: var(--mantine-color-indigo-6);
+  color: #fff;
+}
+
+.switch {
+  padding: 0.5rem 0.75rem;
+  border-top: 1px solid var(--mantine-color-default-border);
+}

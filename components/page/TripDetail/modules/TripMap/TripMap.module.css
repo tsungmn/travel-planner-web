@@ -60,7 +60,7 @@
   height: 8px;
   border: 1.5px solid #fff;
   border-radius: 50%;
-  background: var(--mantine-color-gray-6);
+  background: var(--marker-color, var(--mantine-color-gray-6));
   box-shadow: 0 1px 3px rgb(0 0 0 / 30%);
   opacity: 0.7;
 }
@@ -100,4 +100,93 @@
   border: 2px dashed var(--marker-color);
   border-radius: 50%;
   pointer-events: none;
+}
+
+/* 러프 모드 「장소 찾기」 결과: 영역·장소 마커와 겹쳐 보이지 않도록 속이 빈 번호 배지로 둡니다. */
+.finderWrap {
+  position: relative;
+}
+
+.finder {
+  display: flex;
+  width: 24px;
+  height: 24px;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 2px solid var(--mantine-color-indigo-6);
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 2px 6px rgb(0 0 0 / 30%);
+  color: var(--mantine-color-indigo-7);
+  cursor: pointer;
+  font-family: var(--mantine-font-family);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  transition:
+    transform 150ms ease,
+    background-color 150ms ease;
+}
+.finder:hover {
+  transform: scale(1.12);
+}
+.finder[data-active] {
+  background: var(--mantine-color-indigo-6);
+  color: #fff;
+  transform: scale(1.2);
+}
+.finder:focus-visible {
+  outline: 2px solid var(--mantine-primary-color-filled);
+  outline-offset: 2px;
+}
+
+/* 고정한 장소: 채워진 핀. 이름표가 항상 붙어 있습니다. */
+.finderPin {
+  display: flex;
+  width: 26px;
+  height: 26px;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: var(--mantine-color-indigo-6);
+  box-shadow: 0 2px 6px rgb(0 0 0 / 35%);
+  color: #fff;
+  cursor: pointer;
+  transition: transform 150ms ease;
+}
+.finderPin:hover {
+  transform: scale(1.12);
+}
+.finderPin[data-active] {
+  transform: scale(1.2);
+}
+.finderPin:focus-visible {
+  outline: 2px solid var(--mantine-primary-color-filled);
+  outline-offset: 2px;
+}
+
+/* 마커 아래 이름표. 검색 결과는 고른 것 하나만, 고정한 장소는 모두 뜹니다. 영역 이름표보다 위에 그려집니다. */
+.finderLabel {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 50%;
+  max-width: 200px;
+  padding: 4px 10px;
+  border: 2px solid var(--mantine-color-indigo-6);
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 3px 12px rgb(15 23 42 / 22%);
+  color: #1f2937;
+  font-family: var(--mantine-font-family);
+  font-size: 12px;
+  font-weight: 700;
+  overflow: hidden;
+  pointer-events: none;
+  text-overflow: ellipsis;
+  transform: translateX(-50%);
+  user-select: none;
+  white-space: nowrap;
 }

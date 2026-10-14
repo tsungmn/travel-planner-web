@@ -1,9 +1,10 @@
 import {
   TripMap,
+  type FinderControl,
   type FitTarget,
   type FlyTarget,
   type MapInsets,
 } from "./TripMap";
 
 export { TripMap };
-export type { FitTarget, FlyTarget, MapInsets };
+export type { FinderControl, FitTarget, FlyTarget, MapInsets };

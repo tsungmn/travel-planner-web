@@ -20,6 +20,7 @@ import {
 } from "@/constants/area";
 import { formatDayDate } from "@/lib/date";
 import { formatDistance } from "@/lib/geo";
+import classes from "./AreaSection.module.css";
 
 export type AreaPatch = Partial<
   Pick<TripArea, "label" | "day_index" | "radius_m" | "memo">
@@ -128,9 +129,12 @@ export function AreaEditor({
         이 영역에서 장소 검색
       </Button>
 
-      <Group justify="space-between" mt="xs">
+      <Group className={classes.editorActions} justify="space-between" mt="xs">
         {confirming ? (
-          <Group gap="xs">
+          <Group className={classes.deleteConfirm} gap="xs">
+            <Text size="xs" c="red.7" fw={600}>
+              이 영역을 삭제할까요?
+            </Text>
             <Button color="red" size="compact-md" onClick={onDelete}>
               삭제
             </Button>
@@ -144,6 +148,7 @@ export function AreaEditor({
           </Group>
         ) : (
           <Button
+            className={classes.deleteButton}
             variant="subtle"
             color="red"
             size="compact-md"
@@ -154,6 +159,8 @@ export function AreaEditor({
           </Button>
         )}
         <Button
+          className={classes.doneButton}
+          color="teal"
           size="compact-md"
           leftSection={<IconCheck size={16} />}
           onClick={onDone}
