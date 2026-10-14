@@ -33,6 +33,8 @@ export type AreaEditControl = {
   addMode: boolean;
   onSelect: (id: string | null) => void;
   onAdd: (lat: number, lng: number, radiusM: number) => void;
+  /** 영역 그리기를 취소합니다. (Esc 키) */
+  onCancel: () => void;
   /** 드래그 중 계속 불립니다. 화면에만 반영하고, 저장은 `onCommit`에서 합니다. */
   onChange: (
     id: string,
@@ -244,7 +246,9 @@ export function AreaLayer({
 
       {editable && selectedArea && <Handles area={selectedArea} edit={edit} />}
 
-      {rough && edit?.addMode && <AddAreaTool onAdd={edit.onAdd} />}
+      {rough && edit?.addMode && (
+        <AddAreaTool onAdd={edit.onAdd} onCancel={edit.onCancel} />
+      )}
     </>
   );
 }
@@ -366,7 +370,13 @@ type Center = { lat: number; lng: number };
  * 추가 모드일 때만 마운트됩니다. 그래서 모드를 껐다 켜도 이전 중심점이 남지 않습니다.
  * 터치에는 마우스 이동이 없으니, 두 번째로 누른 지점까지의 거리가 반경이 됩니다.
  */
-function AddAreaTool({ onAdd }: { onAdd: AreaEditControl["onAdd"] }) {
+function AddAreaTool({
+  onAdd,
+  onCancel,
+}: {
+  onAdd: AreaEditControl["onAdd"];
+  onCancel: AreaEditControl["onCancel"];
+}) {
   const { current: mapRef } = useMap();
   const [center, setCenter] = useState<Center | null>(null);
   const [radius, setRadius] = useState(AREA_DEFAULT_RADIUS_M);
@@ -396,15 +406,23 @@ function AddAreaTool({ onAdd }: { onAdd: AreaEditControl["onAdd"] }) {
     if (!map) return;
     const onClick = (event: MapMouseEvent) => handleClick(event);
     const onMove = (event: MapMouseEvent) => handleMove(event);
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setCenter(null);
+        onCancel();
+      }
+    };
     map.on("click", onClick);
     map.on("mousemove", onMove);
+    window.addEventListener("keydown", onKeyDown);
     map.getCanvas().style.cursor = "crosshair";
     return () => {
       map.off("click", onClick);
       map.off("mousemove", onMove);
+      window.removeEventListener("keydown", onKeyDown);
       map.getCanvas().style.cursor = "";
     };
-  }, [mapRef]);
+  }, [mapRef, onCancel]);
 
   const preview = useMemo<Collection>(
     () => ({

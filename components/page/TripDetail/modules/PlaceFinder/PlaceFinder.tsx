@@ -102,7 +102,6 @@ export function PlaceFinder({
   const trimmed = query.trim();
   const rateLimited = error === "rate";
   const hasMarkers = places.length > 0;
-  // 입력이 있거나 마커가 남아 있으면 지우기 버튼을 보여 줍니다.
   const clearable = query.length > 0 || hasMarkers;
   const showCard = !collapsed && (trimmed.length >= 2 || hasMarkers);
   const hasPins = pinned.length > 0;
@@ -179,56 +178,6 @@ export function PlaceFinder({
           )
         }
       />
-
-      {hasPins && (
-        <div className={classes.pins}>
-          {pinned.map((place) => (
-            <span
-              key={place.provider_place_id}
-              className={classes.chip}
-              data-active={place.provider_place_id === activeId || undefined}
-            >
-              <UnstyledButton
-                className={classes.chipName}
-                onClick={() => handleSelect(place)}
-              >
-                {place.name}
-              </UnstyledButton>
-              <ActionIcon
-                variant="subtle"
-                color="gray"
-                size="xs"
-                aria-label={`${place.name} 고정 해제`}
-                onClick={() => onTogglePin(place)}
-              >
-                <IconX size={12} />
-              </ActionIcon>
-            </span>
-          ))}
-          <Group gap={4} className={classes.pinActions}>
-            {pinned.length >= 2 && (
-              <Button
-                size="compact-xs"
-                variant="light"
-                leftSection={
-                  <IconArrowsMaximize size={12} aria-hidden="true" />
-                }
-                onClick={onFitPinned}
-              >
-                모두 보기
-              </Button>
-            )}
-            <Button
-              size="compact-xs"
-              variant="subtle"
-              color="gray"
-              onClick={onClearPinned}
-            >
-              모두 지우기
-            </Button>
-          </Group>
-        </div>
-      )}
 
       {showCard && (
         <div className={classes.card}>
@@ -336,14 +285,77 @@ export function PlaceFinder({
         </div>
       )}
 
+      {hasPins && (
+        <div className={classes.pinsSection}>
+          <div className={classes.pinsHeader}>
+            <span className={classes.pinsCount}>
+              고정한 장소 {pinned.length}
+            </span>
+            <Group gap={4} className={classes.pinActions}>
+              {pinned.length >= 2 && (
+                <Button
+                  size="compact-xs"
+                  variant="light"
+                  leftSection={
+                    <IconArrowsMaximize size={12} aria-hidden="true" />
+                  }
+                  onClick={onFitPinned}
+                >
+                  모두 보기
+                </Button>
+              )}
+              <Button
+                size="compact-xs"
+                variant="subtle"
+                color="gray"
+                onClick={onClearPinned}
+              >
+                모두 지우기
+              </Button>
+            </Group>
+          </div>
+          <div className={classes.pins}>
+            {pinned.map((place) => (
+              <span
+                key={place.provider_place_id}
+                className={classes.chip}
+                data-active={place.provider_place_id === activeId || undefined}
+              >
+                <IconPinFilled
+                  size={10}
+                  className={classes.chipIcon}
+                  aria-hidden="true"
+                />
+                <UnstyledButton
+                  className={classes.chipName}
+                  onClick={() => handleSelect(place)}
+                >
+                  {place.name}
+                </UnstyledButton>
+                <ActionIcon
+                  variant="subtle"
+                  color="gray"
+                  size="xs"
+                  aria-label={`${place.name} 고정 해제`}
+                  onClick={() => onTogglePin(place)}
+                >
+                  <IconX size={12} />
+                </ActionIcon>
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
       {(showCard || hasPins) && (
-        <Switch
-          size="xs"
-          className={classes.switch}
-          label="영역을 만들면 찾기 마커 자동 삭제"
-          checked={autoClear}
-          onChange={(event) => onAutoClearChange(event.currentTarget.checked)}
-        />
+        <div className={classes.switchRow}>
+          <Switch
+            size="xs"
+            label="영역을 만들면 찾기 마커 자동 삭제"
+            checked={autoClear}
+            onChange={(event) => onAutoClearChange(event.currentTarget.checked)}
+          />
+        </div>
       )}
     </Paper>
   );

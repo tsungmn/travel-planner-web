@@ -17,6 +17,7 @@ import {
   AREA_MAX_RADIUS_M,
   AREA_MEMO_MAX_LENGTH,
   AREA_MIN_RADIUS_M,
+  AREA_WARN_RADIUS_M,
 } from "@/constants/area";
 import { formatDayDate } from "@/lib/date";
 import { formatDistance } from "@/lib/geo";
@@ -106,6 +107,11 @@ export function AreaEditor({
           onChange={(value) => onChange({ radius_m: value })}
           aria-label="반경"
         />
+        {area.radius_m >= AREA_WARN_RADIUS_M && (
+          <Text size="xs" c="orange.7" fw={500}>
+            반경이 너무 넓어요. 영역을 좁히면 더 정확하게 계획할 수 있어요.
+          </Text>
+        )}
       </Stack>
 
       <Textarea

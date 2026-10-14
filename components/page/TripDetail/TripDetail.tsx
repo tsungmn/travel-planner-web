@@ -49,7 +49,12 @@ import {
 } from "@/lib/api";
 import { ApiError } from "@/lib/http";
 import { useAirports } from "@/lib/airports";
-import { areaBounds, areaDayLabel, conflictingDays } from "@/lib/areas";
+import {
+  areaBounds,
+  areaDayLabel,
+  conflictingDays,
+  isInArea,
+} from "@/lib/areas";
 import {
   buildFlightStops,
   isAirportMarkerId,
@@ -776,7 +781,22 @@ function TripDetailContent({ id }: { id: string }) {
     patchAreas((areas) => [...areas, created]);
     setSelectedAreaId(created.id);
     setNewAreaId(created.id);
-    if (finderAutoClear) clearFinder();
+    if (finderAutoClear) {
+      const newArea = { ...created };
+      const remainingPinned = finderPinned.filter((p) => !isInArea(p, newArea));
+      const remainingPlaces = finderPlaces.filter((p) => !isInArea(p, newArea));
+      const allRemaining = [...remainingPinned, ...remainingPlaces];
+      const remainingIds = new Set(
+        allRemaining.map((p) => p.provider_place_id),
+      );
+      if (finderActiveId && !remainingIds.has(finderActiveId)) {
+        setFinderActiveId(null);
+      }
+      setFinderPinned(remainingPinned);
+      if (remainingPlaces.length === 0 && remainingPinned.length === 0) {
+        finder.clearResults();
+      }
+    }
     // 이름을 바로 적을 수 있게 시트를 펼칩니다.
     sheet.setSnap((snap) => (snap === 0 ? 1 : snap));
   }
@@ -829,6 +849,7 @@ function TripDetailContent({ id }: { id: string }) {
     addMode: areaAddMode,
     onSelect: handleSelectAreaOnMap,
     onAdd: handleAddArea,
+    onCancel: () => setAddAreaMode(false),
     onChange: editArea,
     onCommit: flushArea,
   };

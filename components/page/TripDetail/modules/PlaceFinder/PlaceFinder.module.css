@@ -3,6 +3,11 @@
   width: min(22rem, 100%);
   overflow: hidden;
   pointer-events: auto;
+  transition: box-shadow 200ms ease;
+}
+
+.root:focus-within {
+  box-shadow: var(--mantine-shadow-lg);
 }
 
 .input {
@@ -10,8 +15,27 @@
   font-size: var(--mantine-font-size-sm);
 }
 
+/* ── 검색 결과 카드 ── */
+
 .card {
   border-top: 1px solid var(--mantine-color-default-border);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .card {
+    animation: cardSlideIn 180ms ease-out;
+  }
+}
+
+@keyframes cardSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .scope {
@@ -34,9 +58,11 @@
   padding-right: 0.5rem;
   transition: background-color 150ms ease;
 }
+
 .row:hover {
   background: var(--mantine-color-default-hover);
 }
+
 .row[data-active] {
   background: var(--mantine-color-indigo-light);
 }
@@ -52,45 +78,11 @@
 
 .pinButton {
   flex: 0 0 auto;
+  transition: transform 150ms ease;
 }
 
-/* 고정한 장소 칩 */
-.pins {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.25rem;
-  padding: 0.375rem 0.5rem;
-  border-top: 1px solid var(--mantine-color-default-border);
-}
-
-.chip {
-  display: inline-flex;
-  max-width: 100%;
-  align-items: center;
-  gap: 2px;
-  padding: 2px 4px 2px 10px;
-  border: 1px solid var(--mantine-color-indigo-3);
-  border-radius: 999px;
-  background: var(--mantine-color-indigo-light);
-  font-size: var(--mantine-font-size-xs);
-  font-weight: 600;
-}
-.chip[data-active] {
-  border-color: var(--mantine-color-indigo-6);
-}
-
-.chipName {
-  max-width: 9rem;
-  overflow: hidden;
-  font-size: inherit;
-  font-weight: inherit;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.pinActions {
-  margin-left: auto;
+.pinButton:hover:not(:disabled) {
+  transform: scale(1.15);
 }
 
 .text {
@@ -112,13 +104,108 @@
   font-size: 0.6875rem;
   font-weight: 700;
   line-height: 1;
+  transition:
+    background-color 150ms ease,
+    color 150ms ease;
 }
+
 .row[data-active] .number {
   background: var(--mantine-color-indigo-6);
   color: #fff;
 }
 
-.switch {
-  padding: 0.5rem 0.75rem;
+/* ── 고정한 장소 ── */
+
+.pinsSection {
   border-top: 1px solid var(--mantine-color-default-border);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .pinsSection {
+    animation: pinsSlideIn 200ms ease-out;
+  }
+}
+
+@keyframes pinsSlideIn {
+  from {
+    opacity: 0;
+    max-height: 0;
+  }
+  to {
+    opacity: 1;
+    max-height: 200px;
+  }
+}
+
+.pinsHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.375rem 0.625rem 0.25rem;
+}
+
+.pinsCount {
+  font-size: var(--mantine-font-size-xs);
+  font-weight: 700;
+  color: var(--mantine-color-indigo-7);
+  white-space: nowrap;
+}
+
+.pinActions {
+  margin-left: auto;
+}
+
+.pins {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0 0.5rem 0.375rem;
+}
+
+.chip {
+  display: inline-flex;
+  max-width: 100%;
+  align-items: center;
+  gap: 2px;
+  padding: 2px 4px 2px 8px;
+  border: 1px solid var(--mantine-color-indigo-3);
+  border-radius: 999px;
+  background: var(--mantine-color-indigo-light);
+  font-size: var(--mantine-font-size-xs);
+  font-weight: 600;
+  transition:
+    border-color 150ms ease,
+    background-color 150ms ease;
+}
+
+.chip:hover {
+  border-color: var(--mantine-color-indigo-4);
+}
+
+.chip[data-active] {
+  border-color: var(--mantine-color-indigo-6);
+  background: var(--mantine-color-indigo-1);
+}
+
+.chipIcon {
+  color: var(--mantine-color-indigo-6);
+  flex: 0 0 auto;
+}
+
+.chipName {
+  max-width: 9rem;
+  overflow: hidden;
+  font-size: inherit;
+  font-weight: inherit;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── 자동 삭제 스위치 ── */
+
+.switchRow {
+  padding: 0.375rem 0.75rem;
+  border-top: 1px solid var(--mantine-color-default-border);
+  background: var(--mantine-color-gray-0);
 }
