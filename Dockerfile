@@ -21,7 +21,7 @@ ENV NEXT_TELEMETRY_DISABLED=1
 
 # next.config.ts 의 rewrites()는 빌드 시점에 확정된다.
 # 런타임 환경변수(web-config)로는 바꿀 수 없으므로 클러스터 내부 주소를 여기서 넣는다.
-ARG API_ORIGIN=http://api
+ARG API_ORIGIN=http://api-service
 ENV API_ORIGIN=${API_ORIGIN}
 
 # NEXT_PUBLIC_* 도 빌드 시점에 번들에 박힌다. 비어 있으면 설정하지 않은 것으로 취급한다.
@@ -48,9 +48,6 @@ RUN test -f .next/standalone/server.js \
 # ── 3) 실행 ────────────────────────────────────────────────────
 FROM node:22-slim AS runner
 WORKDIR /app
-
-# 이 이미지를 GitHub 저장소에 연결한다 (GHCR 패키지 접근 권한 관리가 쉬워진다)
-LABEL org.opencontainers.image.source="https://github.com/tsungmn/travel-planner-web"
 
 ENV NODE_ENV=production \
     NEXT_TELEMETRY_DISABLED=1 \

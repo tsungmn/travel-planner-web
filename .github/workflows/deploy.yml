@@ -1,7 +1,7 @@
 name: build-and-deploy
 
 # 모든 브랜치: 이미지 빌드 + 스모크 테스트만 한다 (push 도 배포도 하지 않음)
-# main 브랜치: 위에 더해 GHCR 에 push 하고 config 저장소의 이미지 태그를 갱신한다
+# main 브랜치: 위에 더해 Docker Hub 에 push 하고 config 저장소의 이미지 태그를 갱신한다
 #   → ArgoCD 가 자동으로 서버에 배포한다. main 병합은 서버 앞에서 확인할 수 있을 때 하세요.
 on:
   push:
@@ -13,11 +13,13 @@ concurrency:
 
 permissions:
   contents: read
-  packages: write
 
 env:
+  # config 저장소(overlays/web/kustomization.yaml)의 images.name 과 똑같아야 한다
+  IMAGE: tsungmn/travel-planner-web
   # 빌드 시점에 확정되는 값 (next.config.ts 의 rewrites, NEXT_PUBLIC_*)
-  API_ORIGIN: http://api
+  # 같은 namespace 안의 api Service 이름 (base/api/service.yaml)
+  API_ORIGIN: http://api-service
   SITE_URL: https://travel.tsungmn.com
 
 jobs:
@@ -31,8 +33,7 @@ jobs:
 
       - id: vars
         run: |
-          # GHCR 이미지 이름은 소문자여야 한다
-          echo "image=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/travel-planner-web" >> "$GITHUB_OUTPUT"
+          echo "image=${IMAGE}" >> "$GITHUB_OUTPUT"
           echo "tag=${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
 
       # arm64 빌드는 main 에서만 한다 (QEMU 라서 느리다)
@@ -65,6 +66,11 @@ jobs:
             | python3 -c "import json,sys; d=json.load(sys.stdin); n=len(d); print(n, 'airports'); assert n > 1000"
           # 지도 워커 파일 (postinstall 산출물)
           curl -fsS -o /dev/null http://localhost:3000/maplibre-gl-worker.mjs
+          # 메일 링크 페이지에 토큰 유출 방지 헤더가 붙는지
+          curl -fsS -D - -o /dev/null http://localhost:3000/verify-email \
+            | grep -qi '^referrer-policy: no-referrer'
+          curl -fsS -D - -o /dev/null http://localhost:3000/reset-password \
+            | grep -qi '^x-robots-tag: noindex'
           # root 로 실행되고 있지 않은지
           test "$(docker exec web-smoke id -u)" != "0"
 
@@ -72,14 +78,14 @@ jobs:
         if: failure()
         run: docker logs web-smoke || true
 
-      # 2) main 에서만: GHCR 에 로그인하고 multi-arch 이미지를 push
-      - name: GHCR 로그인
+      # 2) main 에서만: Docker Hub 에 로그인하고 multi-arch 이미지를 push
+      #    (api 저장소와 같은 계정, 같은 secret 이름 DOCKER_PASSWORD 를 쓴다)
+      - name: Docker Hub 로그인
         if: github.ref == 'refs/heads/main'
         uses: docker/login-action@v3
         with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          username: tsungmn
+          password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: 빌드 + push (amd64, arm64)
         if: github.ref == 'refs/heads/main'
@@ -94,6 +100,7 @@ jobs:
             NEXT_PUBLIC_SITE_URL=${{ env.SITE_URL }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          provenance: false
 
   deploy:
     needs: build
@@ -103,6 +110,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: ${{ github.repository_owner }}/travel-planner-config
+          ref: main
           token: ${{ secrets.CONFIG_REPO_TOKEN }}
 
       - name: config repo 의 이미지 태그 갱신
@@ -112,7 +120,7 @@ jobs:
         run: |
           python3 - <<'PY'
           import os, pathlib, re
-          p = pathlib.Path("overlays/prod/kustomization.yaml")
+          p = pathlib.Path("overlays/web/kustomization.yaml")
           s = p.read_text(encoding="utf-8")
           pattern = re.compile(r'(- name: ' + re.escape(os.environ["IMAGE"]) + r'\n\s+newTag: )"?[^"\n]*"?')
           new, n = pattern.subn(r'\1"' + os.environ["TAG"] + '"', s)
