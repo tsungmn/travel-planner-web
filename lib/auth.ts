@@ -56,3 +56,25 @@ export async function signup(input: {
 export async function logout(): Promise<void> {
   await request("/auth/logout", AUTH_REQUEST);
 }
+
+const DELETE_REQUEST = {
+  method: "DELETE",
+  redirectOnUnauthorized: false,
+} as const;
+
+export type DeleteReason =
+  | "not_useful"
+  | "privacy_concern"
+  | "too_difficult"
+  | "found_alternative"
+  | "other";
+
+export async function deleteAccount(input: {
+  reason: DeleteReason;
+  detail?: string;
+}): Promise<void> {
+  await request("/auth/me", {
+    ...DELETE_REQUEST,
+    body: input,
+  });
+}

@@ -21,6 +21,7 @@ import { IconMapPin, IconPlus, IconRefresh } from "@tabler/icons-react";
 import type { Trip } from "@/types";
 import { getTrips, getUser, type UserInfo } from "@/lib/api";
 import { Header } from "@/components/common/Header";
+import { Footer } from "@/components/common/Footer";
 import { TripCard } from "@/components/common/TripCard";
 import classes from "./TripList.module.css";
 
@@ -116,8 +117,8 @@ function TripListContent() {
     <Box className={classes.page}>
       <Header userName={user.name} userEmail={user.email} />
 
-      <main>
-        <Container size="lg" className={classes.main}>
+      <main className={classes.main}>
+        <Container size="lg" className={classes.mainContainer}>
           <Group
             justify="space-between"
             align="center"
@@ -230,6 +231,8 @@ function TripListContent() {
           )}
         </Container>
       </main>
+
+      <Footer />
     </Box>
   );
 }
