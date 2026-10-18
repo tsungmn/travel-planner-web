@@ -33,6 +33,9 @@ export function useAuthForm() {
   const [submitting, setSubmitting] = useState(false);
   const [errorCode, setErrorCode] = useState<AuthErrorCode | null>(null);
   const [fieldErrors, setFieldErrors] = useState<AuthFieldErrors>({});
+  // 가입 성공 또는 미인증 403 알릿의 재전송 버튼 눌렀을 때 전환되는 "메일을 보냈어요" 화면.
+  // null이면 폼, 문자열이면 해당 이메일 주소의 확인 안내 화면을 보여 줍니다.
+  const [verifySentEmail, setVerifySentEmail] = useState<string | null>(null);
 
   const nextPath = getNextPath(searchParams?.get("next") ?? null);
   // Google OAuth 콜백이 ?error=auth 로 돌려보낸 경우
@@ -45,12 +48,23 @@ export function useAuthForm() {
     setErrorCode(null);
     setFieldErrors({});
     setShowPassword(false);
+    setVerifySentEmail(null);
   }
 
   function changeField(field: AuthField, value: string) {
     setValues((previous) => ({ ...previous, [field]: value }));
     setFieldErrors((previous) => ({ ...previous, [field]: undefined }));
     setErrorCode(null);
+  }
+
+  // 미인증 403 알릿의 "인증 메일 다시 보내기" 인라인 버튼에서 폼을 바꿉니다.
+  function showVerifySent() {
+    setVerifySentEmail(values.email.trim());
+    setErrorCode(null);
+  }
+
+  function backToForm() {
+    setVerifySentEmail(null);
   }
 
   async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
@@ -69,14 +83,16 @@ export function useAuthForm() {
       const email = values.email.trim();
       if (mode === "login") {
         await login({ email, password: values.password });
+        router.push(nextPath);
       } else {
+        // 가입은 쿠키를 발급하지 않고, 같은 자리에서 "메일을 보냈어요" 화면으로 바꿉니다.
         await signup({
           name: values.name.trim(),
           email,
           password: values.password,
         });
+        setVerifySentEmail(email);
       }
-      router.push(nextPath);
     } catch (error) {
       setErrorCode(error instanceof AuthError ? error.code : "unknown");
     } finally {
@@ -99,10 +115,13 @@ export function useAuthForm() {
     googleFailed,
     showPassword,
     submitting,
+    verifySentEmail,
     changeMode,
     changeField,
     setShowPassword,
     handleSubmit,
     handleGoogle,
+    showVerifySent,
+    backToForm,
   };
 }

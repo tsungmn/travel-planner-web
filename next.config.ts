@@ -14,6 +14,14 @@ const nextConfig: NextConfig = {
   // 공항 목록(약 1.5MB)은 자주 바뀌지 않으니 브라우저가 한동안 재사용하게 합니다.
   async headers() {
     return [
+      // 메일 링크의 토큰이 주소에 잠깐 있는 페이지: 검색 노출과 Referer 유출을 막습니다.
+      {
+        source: "/:path(verify-email|reset-password)",
+        headers: [
+          { key: "Referrer-Policy", value: "no-referrer" },
+          { key: "X-Robots-Tag", value: "noindex, nofollow" },
+        ],
+      },
       {
         source: "/data/:path*",
         headers: [

@@ -1,0 +1,85 @@
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.75rem;
+}
+
+.iconWrap {
+  display: grid;
+  place-items: center;
+  width: 4.5rem;
+  height: 4.5rem;
+  border-radius: 999px;
+  margin-bottom: 0.25rem;
+}
+
+.iconWrap[data-tone="loading"] {
+  color: var(--mantine-color-dimmed);
+  background: var(--mantine-color-gray-light);
+}
+
+.iconWrap[data-tone="success"] {
+  color: var(--mantine-primary-color-filled);
+  background: var(--mantine-primary-color-light);
+}
+
+.iconWrap[data-tone="error"] {
+  color: var(--mantine-color-red-filled);
+  background: var(--mantine-color-red-light);
+}
+
+.successIcon {
+  color: var(--mantine-primary-color-filled);
+}
+
+.errorIcon {
+  color: var(--mantine-color-red-filled);
+}
+
+.title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--mantine-color-text);
+}
+
+.hint {
+  margin: 0 auto;
+  max-width: 22rem;
+  color: var(--mantine-color-dimmed);
+  font-size: 0.875rem;
+  line-height: 1.625;
+  word-break: keep-all;
+}
+
+.notice {
+  font-size: 0.8125rem;
+}
+
+.input {
+  height: 2.75rem;
+  min-height: 2.75rem;
+  border-radius: 0.75rem;
+  font-size: 1rem;
+}
+
+.label {
+  margin-bottom: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.primaryButton {
+  height: 3rem;
+  border-radius: 0.75rem;
+  font-weight: 600;
+  margin-top: 0.5rem;
+}

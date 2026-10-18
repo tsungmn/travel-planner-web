@@ -1,0 +1,44 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: var(--mantine-color-body);
+  color: var(--mantine-color-text);
+}
+
+.hero {
+  position: relative;
+  flex-shrink: 0;
+  width: 100%;
+  height: 12rem;
+}
+
+.formArea {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  padding: 2rem 1.25rem;
+}
+
+.formContainer {
+  width: 100%;
+  max-width: 25rem;
+}
+
+@media (min-width: 48em) {
+  .page {
+    flex-direction: row;
+  }
+
+  .hero {
+    width: 55%;
+    height: auto;
+  }
+
+  .formArea {
+    padding: 3rem 2.5rem;
+  }
+}

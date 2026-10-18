@@ -10,6 +10,10 @@ export type AuthFieldError =
   | "passwordLength";
 export type AuthFieldErrors = Partial<Record<AuthField, AuthFieldError>>;
 
+/** 재설정/단독 입력란에서 쓰는 별도의 코드 모음입니다. */
+export type ResetFieldError =
+  "emailRequired" | "emailInvalid" | "passwordRequired" | "passwordLength";
+
 export const AUTH_NAME_MAX_LENGTH = 50;
 export const AUTH_PASSWORD_MIN_LENGTH = 8;
 export const AUTH_PASSWORD_MAX_LENGTH = 128;
@@ -46,4 +50,26 @@ export function validateAuth(input: {
   }
 
   return errors;
+}
+
+/** 단일 이메일 입력란 검증. 인증 메일 재전송/비밀번호 재설정 요청에 씁니다. */
+export function validateEmailField(email: string): ResetFieldError | null {
+  const value = email.trim();
+  if (!value) return "emailRequired";
+  if (!EMAIL_PATTERN.test(value)) return "emailInvalid";
+  return null;
+}
+
+/** 재설정용 비밀번호 단일 입력란 검증. AUTH_PASSWORD_* 상수를 재사용합니다. */
+export function validatePasswordField(
+  password: string,
+): ResetFieldError | null {
+  if (!password) return "passwordRequired";
+  if (
+    password.length < AUTH_PASSWORD_MIN_LENGTH ||
+    password.length > AUTH_PASSWORD_MAX_LENGTH
+  ) {
+    return "passwordLength";
+  }
+  return null;
 }

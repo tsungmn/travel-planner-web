@@ -20,10 +20,13 @@ import {
   type AuthField,
   type AuthFieldError,
 } from "@/lib/authValidation";
+import { resendVerification } from "@/lib/auth";
 import { LoginHero } from "@/components/common/LoginHero";
 import { useAuthForm } from "./hooks/useAuthForm";
+import { useResendCooldown } from "@/hooks/useResendCooldown";
 import { AuthAlerts } from "./modules/AuthAlerts";
 import { GoogleIcon } from "./modules/GoogleIcon";
+import { VerificationSentView } from "./modules/VerificationSentView";
 import classes from "./Login.module.css";
 
 const FIELD_ERROR_MESSAGES: Record<AuthFieldError, string> = {
@@ -58,9 +61,30 @@ function LoginContent() {
   const { mode, values, submitting, showPassword } = form;
   const isSignup = mode === "signup";
 
+  const cooldown = useResendCooldown(resendVerification);
+
   function fieldError(field: AuthField) {
     const code = form.fieldErrors[field];
     return code ? FIELD_ERROR_MESSAGES[code] : undefined;
+  }
+
+  if (form.verifySentEmail) {
+    return (
+      <main className={classes.page}>
+        <div className={classes.hero}>
+          <LoginHero />
+        </div>
+        <section className={classes.formArea} aria-label="이메일 인증 안내">
+          <div className={classes.formContainer}>
+            <VerificationSentView
+              email={form.verifySentEmail}
+              cooldown={cooldown}
+              onBackToForm={form.backToForm}
+            />
+          </div>
+        </section>
+      </main>
+    );
   }
 
   return (
@@ -92,6 +116,12 @@ function LoginContent() {
             googleFailed={form.googleFailed}
             errorCode={form.errorCode}
             onSwitchToLogin={() => form.changeMode("login")}
+            onResendVerification={() => {
+              // 로그인 403은 서버가 메일을 보내지 않은 경우라서, 화면을 바꾸면서 실제로 보냅니다.
+              const email = values.email.trim();
+              form.showVerifySent();
+              void cooldown.send(email);
+            }}
           />
 
           <form
@@ -189,6 +219,14 @@ function LoginContent() {
                 {AUTH_PASSWORD_MIN_LENGTH}자 이상
               </p>
             </Collapse>
+
+            {!isSignup && (
+              <div className={classes.forgotLinkWrap}>
+                <Link href="/forgot-password" className={classes.forgotLink}>
+                  비밀번호를 잊으셨나요?
+                </Link>
+              </div>
+            )}
 
             <Button
               type="submit"

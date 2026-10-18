@@ -9,12 +9,14 @@ type AuthAlertsProps = {
   googleFailed: boolean;
   errorCode: AuthErrorCode | null;
   onSwitchToLogin: () => void;
+  onResendVerification: () => void;
 };
 
 export function AuthAlerts({
   googleFailed,
   errorCode,
   onSwitchToLogin,
+  onResendVerification,
 }: AuthAlertsProps) {
   return (
     <>
@@ -38,6 +40,21 @@ export function AuthAlerts({
               </button>
             </>
           )}
+          {errorCode === "emailNotVerified" && (
+            <>
+              이메일 인증이 아직 안 끝났어요. 메일의 링크를 눌러 주세요.{" "}
+              <button
+                type="button"
+                className={classes.inlineButton}
+                onClick={onResendVerification}
+              >
+                인증 메일 다시 보내기
+              </button>
+            </>
+          )}
+          {errorCode === "network" &&
+            "인터넷 연결을 확인하고 다시 시도해 주세요."}
+          {errorCode === "tooManyAttempts" && "잠시 후 다시 시도해 주세요."}
           {errorCode === "unknown" &&
             "문제가 생겼어요. 잠시 후 다시 시도해 주세요."}
         </ErrorAlert>
