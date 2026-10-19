@@ -18,7 +18,15 @@ import {
   IconPlus,
 } from "@tabler/icons-react";
 
-import type { Flight, Lodging, Stop, Trip, TripArea, TripMode } from "@/types";
+import type {
+  Flight,
+  Lodging,
+  ShareOptions,
+  Stop,
+  Trip,
+  TripArea,
+  TripMode,
+} from "@/types";
 import { formatPeriod } from "@/lib/date";
 import {
   EMPTY_DAY_FLIGHT_STOPS,
@@ -75,6 +83,7 @@ type TripPanelProps = {
   onReorder: (stops: Stop[]) => void;
   onDeleteStop: (id: string) => void;
   onShareEnable: () => Promise<boolean>;
+  onShareOptionChange: (options: Partial<ShareOptions>) => Promise<boolean>;
   onShareDisable: () => Promise<boolean>;
   onTripDelete: () => void;
   onEditTrip: () => void;
@@ -122,6 +131,7 @@ export function TripPanel({
   onReorder,
   onDeleteStop,
   onShareEnable,
+  onShareOptionChange,
   onShareDisable,
   onTripDelete,
   onEditTrip,
@@ -169,6 +179,7 @@ export function TripPanel({
           <TripHeaderActions
             trip={trip}
             onShareEnable={onShareEnable}
+            onShareOptionChange={onShareOptionChange}
             onShareDisable={onShareDisable}
             onTripDelete={onTripDelete}
             onEditTrip={onEditTrip}

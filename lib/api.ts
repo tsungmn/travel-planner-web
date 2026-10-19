@@ -6,6 +6,7 @@ import type {
   Flight,
   Lodging,
   TripArea,
+  ShareOptions,
   PlaceSearchOut,
   SearchMode,
   MapBounds,
@@ -48,6 +49,8 @@ type TripDetailResponse = TripResponse & {
 };
 type SharedTripResponse = {
   trip: Omit<TripPublic, "num_days">;
+  /** 이 링크에서 공개된 항목. 비공개 항목은 빈 목록으로 내려옵니다. */
+  share: ShareOptions;
   stops: Stop[];
   flights: Flight[];
   lodgings: Lodging[];
@@ -64,6 +67,9 @@ function toTripFields(raw: TripResponse): Omit<Trip, "stop_count"> {
     start_date: raw.start_date,
     end_date: raw.end_date,
     share_token: raw.share_token,
+    share_flights: raw.share_flights,
+    share_lodgings: raw.share_lodgings,
+    share_memos: raw.share_memos,
     num_days: inclusiveDays(raw.start_date, raw.end_date),
   };
 }
@@ -149,13 +155,20 @@ export async function deleteTrip(tripId: string): Promise<void> {
   await request(`/trips/${encodeURIComponent(tripId)}`, { method: "DELETE" });
 }
 
-/** 공유를 켭니다. 이미 켜져 있으면 기존 토큰을 그대로 돌려줍니다. */
-export async function enableShare(tripId: string): Promise<string> {
-  const { token } = await request<{ token: string }>(
-    `/trips/${encodeURIComponent(tripId)}/share`,
-    { method: "POST" },
-  );
-  return token;
+export type ShareInfo = ShareOptions & { token: string };
+
+/**
+ * 공유를 켜거나 공개 항목을 바꿉니다. 이미 켜져 있으면 기존 토큰을 그대로 쓰고,
+ * 보낸 항목만 바꿉니다. (생략한 항목은 현재 값 유지, 새 링크의 기본값은 모두 비공개)
+ */
+export function enableShare(
+  tripId: string,
+  options: Partial<ShareOptions> = {},
+): Promise<ShareInfo> {
+  return request<ShareInfo>(`/trips/${encodeURIComponent(tripId)}/share`, {
+    method: "POST",
+    body: options,
+  });
 }
 
 export async function disableShare(tripId: string): Promise<void> {
@@ -167,6 +180,7 @@ export async function disableShare(tripId: string): Promise<void> {
 /** 공유 링크로 보는 여행. 로그인 없이 열리는 화면이라 401이어도 로그인으로 보내지 않습니다. */
 export async function getSharedTrip(token: string): Promise<{
   trip: TripPublic;
+  share: ShareOptions;
   stops: Stop[];
   flights: Flight[];
   lodgings: Lodging[];
@@ -182,6 +196,7 @@ export async function getSharedTrip(token: string): Promise<{
         ...raw.trip,
         num_days: inclusiveDays(raw.trip.start_date, raw.trip.end_date),
       },
+      share: raw.share,
       stops: raw.stops,
       flights: raw.flights,
       lodgings: raw.lodgings,

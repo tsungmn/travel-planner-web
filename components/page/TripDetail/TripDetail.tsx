@@ -19,6 +19,7 @@ import type {
   Lodging,
   MapBounds,
   PlaceResult,
+  ShareOptions,
   Stop,
   Trip,
   TripArea,
@@ -995,12 +996,19 @@ function TripDetailContent({ id }: { id: string }) {
 
   // ----- 여행 정보 -----
 
-  async function handleShareEnable() {
-    const token = await save(() => enableShare(id));
-    if (!token) return false;
+  // 공유를 켜거나 공개 항목(항공편/숙소/메모)을 바꿉니다. 응답의 값으로 화면을 맞춥니다.
+  async function handleShareEnable(options?: Partial<ShareOptions>) {
+    const info = await save(() => enableShare(id, options));
+    if (!info) return false;
     patchData((current) => ({
       ...current,
-      trip: { ...current.trip, share_token: token },
+      trip: {
+        ...current.trip,
+        share_token: info.token,
+        share_flights: info.flights,
+        share_lodgings: info.lodgings,
+        share_memos: info.memos,
+      },
     }));
     return true;
   }
@@ -1013,7 +1021,13 @@ function TripDetailContent({ id }: { id: string }) {
     if (!done) return false;
     patchData((current) => ({
       ...current,
-      trip: { ...current.trip, share_token: null },
+      trip: {
+        ...current.trip,
+        share_token: null,
+        share_flights: false,
+        share_lodgings: false,
+        share_memos: false,
+      },
     }));
     return true;
   }
@@ -1157,7 +1171,8 @@ function TripDetailContent({ id }: { id: string }) {
                 onMoveStop={handleMoveStop}
                 onReorder={handleReorder}
                 onDeleteStop={handleDeleteStop}
-                onShareEnable={handleShareEnable}
+                onShareEnable={() => handleShareEnable()}
+                onShareOptionChange={handleShareEnable}
                 onShareDisable={handleShareDisable}
                 onTripDelete={handleTripDelete}
                 onEditTrip={() => route.openView("trip-edit")}

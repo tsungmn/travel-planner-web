@@ -2,7 +2,7 @@ import type { Ref } from "react";
 import { Box, Group, ScrollArea, Stack, Text, Title } from "@mantine/core";
 import { IconAlertCircle } from "@tabler/icons-react";
 
-import type { Flight, Lodging, Stop, TripPublic } from "@/types";
+import type { Flight, Lodging, ShareOptions, Stop, TripPublic } from "@/types";
 import { formatPeriod } from "@/lib/date";
 import {
   EMPTY_DAY_FLIGHT_STOPS,
@@ -18,6 +18,8 @@ import classes from "./SharePanel.module.css";
 
 type SharePanelProps = {
   trip: TripPublic;
+  /** 소유자가 공개한 항목. 공개하지 않은 항목은 "없음"이 아니라 아예 숨깁니다. */
+  share: ShareOptions;
   stops: Stop[];
   lodgings: Lodging[];
   flights: Flight[];
@@ -40,6 +42,7 @@ const noop = () => {};
 
 export function SharePanel({
   trip,
+  share,
   stops,
   lodgings,
   flights,
@@ -77,14 +80,23 @@ export function SharePanel({
           </Text>
         </Box>
 
-        <FlightSection flights={flights} onAdd={noop} onEdit={noop} readOnly />
-        <LodgingSection
-          lodgings={lodgings}
-          onAdd={noop}
-          onEdit={noop}
-          onFocus={onFocusLodging}
-          readOnly
-        />
+        {share.flights && (
+          <FlightSection
+            flights={flights}
+            onAdd={noop}
+            onEdit={noop}
+            readOnly
+          />
+        )}
+        {share.lodgings && (
+          <LodgingSection
+            lodgings={lodgings}
+            onAdd={noop}
+            onEdit={noop}
+            onFocus={onFocusLodging}
+            readOnly
+          />
+        )}
 
         <DayTabs
           numDays={trip.num_days}

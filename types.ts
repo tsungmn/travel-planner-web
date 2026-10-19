@@ -7,6 +7,10 @@ export type Trip = {
   start_date: string;
   end_date: string;
   share_token: string | null;
+  /** 공유 링크로 공개할 항목. 새 링크는 모두 비공개로 시작합니다. */
+  share_flights: boolean;
+  share_lodgings: boolean;
+  share_memos: boolean;
   num_days: number;
   stop_count: number;
 };
@@ -22,6 +26,13 @@ export type TripPublic = Pick<
   | "end_date"
   | "num_days"
 >;
+
+/** 공유 링크에서 공개되는 항목 */
+export type ShareOptions = {
+  flights: boolean;
+  lodgings: boolean;
+  memos: boolean;
+};
 
 export type Stop = {
   id: string;

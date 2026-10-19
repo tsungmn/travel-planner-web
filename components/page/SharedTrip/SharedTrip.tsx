@@ -13,7 +13,14 @@ import { Box, Button } from "@mantine/core";
 import { useElementSize, useMediaQuery } from "@mantine/hooks";
 import { IconAlertCircle } from "@tabler/icons-react";
 
-import type { Flight, Lodging, Stop, TripArea, TripPublic } from "@/types";
+import type {
+  Flight,
+  Lodging,
+  ShareOptions,
+  Stop,
+  TripArea,
+  TripPublic,
+} from "@/types";
 import { getSharedTrip } from "@/lib/api";
 import { useAirports } from "@/lib/airports";
 import {
@@ -41,6 +48,7 @@ import classes from "./SharedTrip.module.css";
 
 type TripData = {
   trip: TripPublic;
+  share: ShareOptions;
   stops: Stop[];
   lodgings: Lodging[];
   flights: Flight[];
@@ -210,7 +218,7 @@ function SharedTripContent({ token }: { token: string }) {
       />
     );
 
-  const { trip, stops, lodgings, flights, areas } = data;
+  const { trip, share, stops, lodgings, flights, areas } = data;
 
   return (
     <Box className={classes.page}>
@@ -234,6 +242,7 @@ function SharedTripContent({ token }: { token: string }) {
           <Box className={classes.panelBody}>
             <SharePanel
               trip={trip}
+              share={share}
               stops={stops}
               lodgings={lodgings}
               flights={flights}

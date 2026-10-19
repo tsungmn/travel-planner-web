@@ -32,15 +32,23 @@ import {
   IconTrash,
 } from "@tabler/icons-react";
 
-import type { Trip } from "@/types";
+import type { ShareOptions, Trip } from "@/types";
 import { buildShareUrl } from "@/lib/share";
 import { useSiteOrigin } from "@/hooks/useSiteOrigin";
 import classes from "./TripHeaderActions.module.css";
+
+const SHARE_OPTION_LABELS: { key: keyof ShareOptions; label: string }[] = [
+  { key: "flights", label: "항공편 공개" },
+  { key: "lodgings", label: "숙소 공개" },
+  { key: "memos", label: "메모 공개" },
+];
 
 type TripHeaderActionsProps = {
   trip: Trip;
   /** 공유를 켭니다. 성공하면 true, 실패하면 false(안내는 호출한 쪽에서 합니다). */
   onShareEnable: () => Promise<boolean>;
+  /** 공개 항목(항공편/숙소/메모) 하나를 켜거나 끕니다. */
+  onShareOptionChange: (options: Partial<ShareOptions>) => Promise<boolean>;
   onShareDisable: () => Promise<boolean>;
   onTripDelete: () => void;
   onEditTrip: () => void;
@@ -49,6 +57,7 @@ type TripHeaderActionsProps = {
 export function TripHeaderActions({
   trip,
   onShareEnable,
+  onShareOptionChange,
   onShareDisable,
   onTripDelete,
   onEditTrip,
@@ -89,6 +98,10 @@ export function TripHeaderActions({
     await runShare(onShareEnable);
   }
 
+  async function handleOption(key: keyof ShareOptions, checked: boolean) {
+    await runShare(() => onShareOptionChange({ [key]: checked }));
+  }
+
   async function handleConfirmDisable() {
     const done = await runShare(onShareDisable);
     setConfirmDisable(false);
@@ -117,8 +130,14 @@ export function TripHeaderActions({
     <ShareContent
       enabled={shareEnabled}
       url={shareUrl}
+      options={{
+        flights: trip.share_flights,
+        lodgings: trip.share_lodgings,
+        memos: trip.share_memos,
+      }}
       confirmDisable={confirmDisable}
       onToggle={handleToggle}
+      onOptionChange={handleOption}
       onCancelDisable={() => setConfirmDisable(false)}
       onConfirmDisable={handleConfirmDisable}
       onCopy={handleCopy}
@@ -225,16 +244,20 @@ export function TripHeaderActions({
 function ShareContent({
   enabled,
   url,
+  options,
   confirmDisable,
   onToggle,
+  onOptionChange,
   onCancelDisable,
   onConfirmDisable,
   onCopy,
 }: {
   enabled: boolean;
   url: string;
+  options: ShareOptions;
   confirmDisable: boolean;
   onToggle: (checked: boolean) => void;
+  onOptionChange: (key: keyof ShareOptions, checked: boolean) => void;
   onCancelDisable: () => void;
   onConfirmDisable: () => void;
   onCopy: () => void;
@@ -279,6 +302,25 @@ function ShareContent({
           aria-label="링크로 공유"
         />
       </Group>
+
+      {enabled && (
+        <Stack gap={6}>
+          <Text size="xs" c="dimmed">
+            장소와 영역은 항상 공개돼요. 아래 항목은 켠 것만 보여요.
+          </Text>
+          {SHARE_OPTION_LABELS.map(({ key, label }) => (
+            <Switch
+              key={key}
+              size="sm"
+              label={label}
+              checked={options[key]}
+              onChange={(event) =>
+                onOptionChange(key, event.currentTarget.checked)
+              }
+            />
+          ))}
+        </Stack>
+      )}
 
       {enabled && url && (
         <Group gap="xs" wrap="nowrap">

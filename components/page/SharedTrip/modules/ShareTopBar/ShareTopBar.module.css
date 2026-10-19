@@ -10,11 +10,9 @@
 
 .inner {
   display: flex;
-  width: min(100% - 2rem, 60rem);
   height: 3.5rem;
   align-items: center;
   justify-content: space-between;
-  margin: 0 auto;
 }
 
 .logo {

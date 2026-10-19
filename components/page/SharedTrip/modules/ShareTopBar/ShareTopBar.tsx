@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Box, Button, Text, UnstyledButton } from "@mantine/core";
+import { Box, Button, Container, Text, UnstyledButton } from "@mantine/core";
 import { IconMapPin } from "@tabler/icons-react";
 
 import classes from "./ShareTopBar.module.css";
@@ -8,7 +8,7 @@ import classes from "./ShareTopBar.module.css";
 export function ShareTopBar() {
   return (
     <Box component="header" className={classes.header}>
-      <Box className={classes.inner}>
+      <Container className={classes.inner} fluid>
         <UnstyledButton
           component={Link}
           href="/"
@@ -28,7 +28,7 @@ export function ShareTopBar() {
         >
           나도 일정 만들기
         </Button>
-      </Box>
+      </Container>
     </Box>
   );
 }
