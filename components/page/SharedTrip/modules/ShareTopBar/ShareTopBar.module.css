@@ -1,4 +1,3 @@
-/* components/common/Header/Header.module.css와 높이(3.5rem)·폭을 맞춥니다. */
 .header {
   position: sticky;
   z-index: 40;
@@ -30,10 +29,4 @@
 .logo:focus-visible {
   outline: 2px solid var(--mantine-primary-color-filled);
   outline-offset: 3px;
-}
-
-@media (min-width: 48em) {
-  .inner {
-    width: min(100% - 3rem, 60rem);
-  }
 }
