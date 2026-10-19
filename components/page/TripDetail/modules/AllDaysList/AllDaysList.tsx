@@ -1,5 +1,5 @@
 import { Fragment } from "react";
-import type { Lodging, TripPublic, Stop } from "@/types";
+import type { Lodging, TripPublic, SharedStop } from "@/types";
 import {
   Stack,
   Box,
@@ -14,7 +14,7 @@ import classes from "./AllDaysList.module.css";
 import { formatDayDate } from "@/lib/date";
 import { IconHome } from "@tabler/icons-react";
 import { getDayColor } from "@/lib/dayColor";
-import { numberStops } from "@/lib/lodging";
+import { isHiddenStop, numberStops } from "@/lib/lodging";
 import { flightStopsOfDay, type FlightStop } from "@/lib/flightStops";
 import { AirportStopGroup } from "../AirportStopRow";
 import { DistanceSeparator } from "../DistanceSeparator";
@@ -29,7 +29,7 @@ export function AllDaysList({
   onSelect,
 }: {
   trip: TripPublic;
-  stops: Stop[];
+  stops: SharedStop[];
   lodgings: Lodging[];
   /** 항공편에서 만든 공항. 개수에는 들어가지 않습니다. */
   flightStops: FlightStop[];
@@ -72,22 +72,20 @@ export function AllDaysList({
               {airportGroup(airports.start)}
               {dayStops.length ? (
                 <Stack gap={0}>
-                  {dayStops.map((stop, index) => (
-                    <Fragment key={stop.id}>
-                      {index > 0 && (
-                        <DistanceSeparator
-                          from={dayStops[index - 1]}
-                          to={stop}
+                  {dayStops.map((stop, index) => {
+                    const prev = index > 0 ? dayStops[index - 1] : undefined;
+                    return (
+                      <Fragment key={stop.id}>
+                        {prev && <DistanceSeparator from={prev} to={stop} />}
+                        <StopPreview
+                          stop={stop}
+                          number={numbers[index]}
+                          color={color}
+                          onClick={() => onSelect(day)}
                         />
-                      )}
-                      <StopPreview
-                        stop={stop}
-                        number={numbers[index]}
-                        color={color}
-                        onClick={() => onSelect(day)}
-                      />
-                    </Fragment>
-                  ))}
+                      </Fragment>
+                    );
+                  })}
                 </Stack>
               ) : (
                 <Paper withBorder p="sm" radius="md">
@@ -111,12 +109,35 @@ function StopPreview({
   color,
   onClick,
 }: {
-  stop: Stop;
+  stop: SharedStop;
   /** 숙소는 null입니다. */
   number: number | null;
   color: string;
   onClick: () => void;
 }) {
+  // 숙소를 비공개로 둔 공유 링크: 이름·주소·메모 없이 "숙소"로만 보여줍니다.
+  if (isHiddenStop(stop)) {
+    return (
+      <Card
+        component="button"
+        type="button"
+        withBorder
+        p="sm"
+        radius="md"
+        className={classes.stopCard}
+        onClick={onClick}
+      >
+        <Group wrap="nowrap">
+          <ThemeIcon size="sm" radius="xl" style={{ background: color }}>
+            <IconHome size={12} stroke={2.5} aria-hidden="true" />
+          </ThemeIcon>
+          <Text size="sm" fw={600}>
+            숙소
+          </Text>
+        </Group>
+      </Card>
+    );
+  }
   return (
     <Card
       component="button"

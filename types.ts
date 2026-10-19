@@ -51,6 +51,18 @@ export type Stop = {
 };
 
 /**
+ * 숙소를 비공개로 둔 공유 링크에서 숙소 장소 자리에 내려오는 자리표시.
+ * 이름·주소·좌표·메모는 없고 일정 속 순서만 있어서, 지도에는 못 그리고 목록에는 "숙소"로만 보입니다.
+ */
+export type HiddenStop = Pick<
+  Stop,
+  "id" | "trip_id" | "day_index" | "sort_order"
+> & { hidden: true };
+
+/** 공유 화면의 장소: 일반 장소이거나 숨겨진 숙소 자리표시 */
+export type SharedStop = Stop | HiddenStop;
+
+/**
  * 러프 계획 영역: "이 날은 이 동네를 돌아다니자"를 원(중심 + 반경)으로 표시한 것.
  * 장소(Stop)와는 연결 키가 없고, 좌표로 영역 안에 있는지 계산합니다.
  */

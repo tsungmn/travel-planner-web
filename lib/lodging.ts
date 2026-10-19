@@ -1,4 +1,4 @@
-import type { Lodging, Stop } from "@/types";
+import type { HiddenStop, Lodging, SharedStop, Stop } from "@/types";
 
 type Located = Pick<Stop, "lat" | "lng" | "provider_place_id">;
 
@@ -18,14 +18,21 @@ export function findLodgingFor(
   );
 }
 
+/** 숙소를 공개하지 않아 위치 없이 자리만 남은 숙소 장소인지. */
+export function isHiddenStop(stop: SharedStop): stop is HiddenStop {
+  return "hidden" in stop && stop.hidden === true;
+}
+
 /**
  * 장소 목록(한 일차)에 번호를 붙입니다.
- * 숙소는 번호를 차지하지 않고 null을 돌려주며, 나머지는 1부터 이어서 셉니다.
+ * 숙소(숨겨진 것 포함)는 번호를 차지하지 않고 null을 돌려주며, 나머지는 1부터 이어서 셉니다.
  */
 export function numberStops(
-  stops: Stop[],
+  stops: SharedStop[],
   lodgings: Lodging[],
 ): (number | null)[] {
   let count = 0;
-  return stops.map((stop) => (findLodgingFor(stop, lodgings) ? null : ++count));
+  return stops.map((stop) =>
+    isHiddenStop(stop) || findLodgingFor(stop, lodgings) ? null : ++count,
+  );
 }

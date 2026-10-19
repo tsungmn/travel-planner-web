@@ -15,13 +15,16 @@ import { IconAlertCircle } from "@tabler/icons-react";
 
 import type {
   Flight,
+  HiddenStop,
   Lodging,
   ShareOptions,
+  SharedStop,
   Stop,
   TripArea,
   TripPublic,
 } from "@/types";
 import { getSharedTrip } from "@/lib/api";
+import { isHiddenStop } from "@/lib/lodging";
 import { useAirports } from "@/lib/airports";
 import {
   buildFlightStops,
@@ -49,7 +52,7 @@ import classes from "./SharedTrip.module.css";
 type TripData = {
   trip: TripPublic;
   share: ShareOptions;
-  stops: Stop[];
+  stops: SharedStop[];
   lodgings: Lodging[];
   flights: Flight[];
   areas: TripArea[];
@@ -115,6 +118,16 @@ function SharedTripContent({ token }: { token: string }) {
     setError(false);
     fetchTrip();
   }
+
+  // 지도에는 위치가 있는 장소만 그립니다. 숨겨진 숙소 자리는 경로를 끊는 데만 씁니다.
+  const mapStops = useMemo(
+    () => (data?.stops ?? []).filter((s): s is Stop => !isHiddenStop(s)),
+    [data],
+  );
+  const hiddenStops = useMemo(
+    () => (data?.stops ?? []).filter((s): s is HiddenStop => isHiddenStop(s)),
+    [data],
+  );
 
   // 마커 강조는 잠깐만 보여줍니다.
   useEffect(() => {
@@ -267,7 +280,8 @@ function SharedTripContent({ token }: { token: string }) {
         <Box className={classes.mapPane}>
           <TripMap
             trip={trip}
-            stops={stops}
+            stops={mapStops}
+            hiddenStops={hiddenStops}
             lodgings={lodgings}
             // 공유 화면은 읽기 전용이라, 러프 영역은 계획 모드의 옅은 배경으로만 보여줍니다.
             areas={areas}

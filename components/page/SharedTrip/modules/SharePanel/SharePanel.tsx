@@ -2,7 +2,13 @@ import type { Ref } from "react";
 import { Box, Group, ScrollArea, Stack, Text, Title } from "@mantine/core";
 import { IconAlertCircle } from "@tabler/icons-react";
 
-import type { Flight, Lodging, ShareOptions, Stop, TripPublic } from "@/types";
+import type {
+  Flight,
+  Lodging,
+  ShareOptions,
+  SharedStop,
+  TripPublic,
+} from "@/types";
 import { formatPeriod } from "@/lib/date";
 import {
   EMPTY_DAY_FLIGHT_STOPS,
@@ -20,7 +26,7 @@ type SharePanelProps = {
   trip: TripPublic;
   /** 소유자가 공개한 항목. 공개하지 않은 항목은 "없음"이 아니라 아예 숨깁니다. */
   share: ShareOptions;
-  stops: Stop[];
+  stops: SharedStop[];
   lodgings: Lodging[];
   flights: Flight[];
   /** 항공편에서 만든 공항 항목 (전체 일차) */

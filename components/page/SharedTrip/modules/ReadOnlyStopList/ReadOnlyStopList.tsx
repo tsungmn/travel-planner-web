@@ -13,16 +13,16 @@ import {
 
 import { IconHome } from "@tabler/icons-react";
 
-import type { Lodging, Stop } from "@/types";
+import type { Lodging, SharedStop } from "@/types";
 import { getDayColor } from "@/lib/dayColor";
-import { numberStops } from "@/lib/lodging";
+import { isHiddenStop, numberStops } from "@/lib/lodging";
 import type { DayFlightStops, FlightStop } from "@/lib/flightStops";
 import { AirportStopGroup } from "@/components/page/TripDetail/modules/AirportStopRow";
 import { DistanceSeparator } from "@/components/page/TripDetail/modules/DistanceSeparator";
 import classes from "./ReadOnlyStopList.module.css";
 
 type ReadOnlyStopListProps = {
-  stops: Stop[];
+  stops: SharedStop[];
   lodgings: Lodging[];
   /** 항공편에서 만든 공항. 출국편은 맨 위, 귀국편은 맨 아래에 붙습니다. */
   flightStops: DayFlightStops;
@@ -59,21 +59,22 @@ export function ReadOnlyStopList({
       {airportGroup(flightStops.start)}
       {stops.length ? (
         <Stack gap={0}>
-          {stops.map((stop, index) => (
-            <Fragment key={stop.id}>
-              {index > 0 && (
-                <DistanceSeparator from={stops[index - 1]} to={stop} />
-              )}
-              <ReadOnlyStop
-                stop={stop}
-                number={numbers[index]}
-                expanded={expandedStopId === stop.id}
-                hovered={hoveredStopId === stop.id}
-                onToggle={() => onToggle(stop.id)}
-                onHover={onHover}
-              />
-            </Fragment>
-          ))}
+          {stops.map((stop, index) => {
+            const prev = index > 0 ? stops[index - 1] : undefined;
+            return (
+              <Fragment key={stop.id}>
+                {prev && <DistanceSeparator from={prev} to={stop} />}
+                <ReadOnlyStop
+                  stop={stop}
+                  number={numbers[index]}
+                  expanded={expandedStopId === stop.id}
+                  hovered={hoveredStopId === stop.id}
+                  onToggle={() => onToggle(stop.id)}
+                  onHover={onHover}
+                />
+              </Fragment>
+            );
+          })}
         </Stack>
       ) : (
         <Paper withBorder p="lg" radius="md">
@@ -95,7 +96,7 @@ function ReadOnlyStop({
   onToggle,
   onHover,
 }: {
-  stop: Stop;
+  stop: SharedStop;
   /** 숙소는 null입니다. */
   number: number | null;
   expanded: boolean;
@@ -103,6 +104,29 @@ function ReadOnlyStop({
   onToggle: () => void;
   onHover: (id: string | null) => void;
 }) {
+  // 숙소를 비공개로 둔 공유 링크: 이름·주소·메모 없이 "숙소"로만 보여줍니다. (지도에는 없습니다)
+  if (isHiddenStop(stop)) {
+    return (
+      <Card
+        withBorder
+        radius="md"
+        p="sm"
+        className={classes.stopCard}
+        data-stop-id={stop.id}
+      >
+        <Group wrap="nowrap">
+          <ThemeIcon
+            size="sm"
+            radius="xl"
+            style={{ background: getDayColor(stop.day_index).hex }}
+          >
+            <IconHome size={12} stroke={2.5} aria-hidden="true" />
+          </ThemeIcon>
+          <Text fw={600}>숙소</Text>
+        </Group>
+      </Card>
+    );
+  }
   const expandable = Boolean(stop.memo);
 
   return (

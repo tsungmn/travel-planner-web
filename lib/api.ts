@@ -7,6 +7,7 @@ import type {
   Lodging,
   TripArea,
   ShareOptions,
+  SharedStop,
   PlaceSearchOut,
   SearchMode,
   MapBounds,
@@ -51,7 +52,7 @@ type SharedTripResponse = {
   trip: Omit<TripPublic, "num_days">;
   /** 이 링크에서 공개된 항목. 비공개 항목은 빈 목록으로 내려옵니다. */
   share: ShareOptions;
-  stops: Stop[];
+  stops: SharedStop[];
   flights: Flight[];
   lodgings: Lodging[];
   areas: TripArea[];
@@ -181,7 +182,7 @@ export async function disableShare(tripId: string): Promise<void> {
 export async function getSharedTrip(token: string): Promise<{
   trip: TripPublic;
   share: ShareOptions;
-  stops: Stop[];
+  stops: SharedStop[];
   flights: Flight[];
   lodgings: Lodging[];
   areas: TripArea[];

@@ -9,6 +9,7 @@ import { Center, Loader } from "@mantine/core";
 import { IconHome, IconPinFilled, IconPlane } from "@tabler/icons-react";
 
 import type {
+  HiddenStop,
   Lodging,
   MapBounds,
   PlaceResult,
@@ -21,7 +22,7 @@ import { areaBounds } from "@/lib/areas";
 import { addDays } from "@/lib/date";
 import { getDayColor } from "@/lib/dayColor";
 import { uniqueAirportStops, type FlightStop } from "@/lib/flightStops";
-import { findLodgingFor } from "@/lib/lodging";
+import { findLodgingFor, isHiddenStop } from "@/lib/lodging";
 import { DEFAULT_VIEW_STATE } from "@/constants/map";
 import { AreaLayer, type AreaEditControl } from "../AreaLayer";
 import classes from "./TripMap.module.css";
@@ -61,6 +62,11 @@ export type FitTarget = MapBounds;
 type TripMapProps = {
   trip: TripPublic;
   stops: Stop[];
+  /**
+   * 공유 화면에서 숙소를 비공개로 둔 자리. 지도에는 그리지 않고, 경로를 이 자리에서 끊는 데만 씁니다.
+   * (A–B / C–D 처럼 숙소를 사이에 둔 두 장소를 잇지 않습니다)
+   */
+  hiddenStops?: HiddenStop[];
   lodgings: Lodging[];
   /** 러프 계획 영역 */
   areas: TripArea[];
@@ -194,6 +200,7 @@ function cornersOfAreas(areas: TripArea[]): Point[] {
 export function TripMap({
   trip,
   stops,
+  hiddenStops,
   lodgings,
   areas,
   mode,
@@ -268,13 +275,24 @@ export function TripMap({
   const routes = useMemo(() => {
     // 러프 모드에서는 장소를 잇는 경로가 영역을 가려서 그리지 않습니다.
     if (rough || selectedDay === null) return [];
-    const coordinates = sortedStops
-      .filter((stop) => stop.day_index === selectedDay)
-      .map((stop) => [stop.lng, stop.lat] as [number, number]);
-    return coordinates.length >= 2
-      ? [{ dayIndex: selectedDay, coordinates }]
-      : [];
-  }, [sortedStops, selectedDay, rough]);
+    // 숨겨진 숙소 자리에서는 선을 끊습니다. 한 점만 남은 조각은 그리지 않습니다.
+    const ordered = [
+      ...sortedStops.filter((stop) => stop.day_index === selectedDay),
+      ...(hiddenStops ?? []).filter((stop) => stop.day_index === selectedDay),
+    ].sort((a, b) => a.sort_order - b.sort_order);
+    const pieces: [number, number][][] = [[]];
+    for (const stop of ordered) {
+      if (isHiddenStop(stop)) pieces.push([]);
+      else pieces[pieces.length - 1].push([stop.lng, stop.lat]);
+    }
+    return pieces
+      .filter((coordinates) => coordinates.length >= 2)
+      .map((coordinates, piece) => ({
+        dayIndex: selectedDay,
+        piece,
+        coordinates,
+      }));
+  }, [sortedStops, hiddenStops, selectedDay, rough]);
 
   // 러프 모드에서는 (선택한 일차의) 영역들에 맞춥니다. 영역이 없으면 장소·숙소로 대신합니다.
   const roughPoints = useMemo(
@@ -408,8 +426,8 @@ export function TripMap({
     >
       {routes.map((route) => (
         <Source
-          key={`route-${route.dayIndex}`}
-          id={`trip-route-${route.dayIndex}`}
+          key={`route-${route.dayIndex}-${route.piece}`}
+          id={`trip-route-${route.dayIndex}-${route.piece}`}
           type="geojson"
           data={{
             type: "Feature",
@@ -418,7 +436,7 @@ export function TripMap({
           }}
         >
           <Layer
-            id={`trip-route-line-${route.dayIndex}`}
+            id={`trip-route-line-${route.dayIndex}-${route.piece}`}
             type="line"
             layout={{ "line-join": "round", "line-cap": "round" }}
             paint={{
