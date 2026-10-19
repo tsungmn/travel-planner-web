@@ -3,8 +3,10 @@
 import { useRef, useState } from "react";
 import {
   ActionIcon,
+  Alert,
   Box,
   Button,
+  Divider,
   Drawer,
   Group,
   Indicator,
@@ -20,10 +22,12 @@ import {
   Switch,
   Text,
   TextInput,
+  Tooltip,
 } from "@mantine/core";
 import { useMediaQuery } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
 import {
+  IconAlertTriangle,
   IconCopy,
   IconDotsVertical,
   IconLink,
@@ -63,6 +67,7 @@ export function TripHeaderActions({
   onEditTrip,
 }: TripHeaderActionsProps) {
   const isMobile = useMediaQuery("(max-width: 47.99em)");
+  const isCompact = useMediaQuery("(max-width: 22rem)");
   const origin = useSiteOrigin();
   const [shareOpen, setShareOpen] = useState(false);
   const [confirmDisable, setConfirmDisable] = useState(false);
@@ -147,26 +152,31 @@ export function TripHeaderActions({
   const shareButton = (
     <Indicator
       disabled={!shareEnabled}
-      size={10}
-      offset={3}
+      size={9}
+      offset={4}
       color="teal"
       withBorder
+      processing={shareEnabled}
     >
       <Button
-        variant="default"
+        variant={shareEnabled ? "light" : "default"}
+        color={shareEnabled ? "teal" : "gray"}
         size="compact-sm"
         leftSection={<IconShare size={16} />}
-        className={shareEnabled ? classes.shareOn : undefined}
+        className={`${classes.shareButton} ${
+          shareEnabled ? classes.shareOn : ""
+        }`}
         onClick={() => setShareOpen((open) => !open)}
+        aria-label="공유"
       >
-        공유
+        {isCompact ? null : "공유"}
       </Button>
     </Indicator>
   );
 
   return (
     <>
-      <Group gap="xs" wrap="nowrap">
+      <Group gap="xs" wrap="nowrap" className={classes.actions}>
         {isMobile ? (
           <>
             {shareButton}
@@ -175,10 +185,17 @@ export function TripHeaderActions({
               onClose={closeShare}
               position="bottom"
               size="auto"
-              title="공유"
+              title={
+                <Text size="md" fw={600}>
+                  공유
+                </Text>
+              }
               radius="md"
+              styles={{
+                content: { paddingBottom: "env(safe-area-inset-bottom)" },
+              }}
             >
-              {shareContent}
+              <Box className={classes.drawerBody}>{shareContent}</Box>
             </Drawer>
           </>
         ) : (
@@ -186,19 +203,27 @@ export function TripHeaderActions({
             opened={shareOpen}
             onChange={(opened) => (opened ? setShareOpen(true) : closeShare())}
             position="bottom-end"
-            width={340}
+            width={360}
             shadow="md"
+            radius="md"
           >
             <PopoverTarget>{shareButton}</PopoverTarget>
             <PopoverDropdown>{shareContent}</PopoverDropdown>
           </Popover>
         )}
 
-        <Menu position="bottom-end" withinPortal>
+        <Menu position="bottom-end" withinPortal shadow="md" radius="md">
           <MenuTarget>
-            <ActionIcon variant="subtle" color="gray" aria-label="여행 메뉴">
-              <IconDotsVertical size={18} />
-            </ActionIcon>
+            <Tooltip label="더 보기" position="bottom" withArrow>
+              <ActionIcon
+                variant="subtle"
+                color="gray"
+                aria-label="여행 메뉴"
+                className={classes.menuIcon}
+              >
+                <IconDotsVertical size={18} />
+              </ActionIcon>
+            </Tooltip>
           </MenuTarget>
           <MenuDropdown>
             <MenuItem
@@ -207,6 +232,7 @@ export function TripHeaderActions({
             >
               여행 정보 수정
             </MenuItem>
+            <Divider label="위험 구역" labelPosition="center" fs="italic" />
             <MenuItem
               color="red"
               leftSection={<IconTrash size={16} />}
@@ -221,9 +247,15 @@ export function TripHeaderActions({
       <Modal
         opened={deleteOpen}
         onClose={() => setDeleteOpen(false)}
-        title="이 여행을 삭제할까요?"
+        title={
+          <Group gap="xs">
+            <IconAlertTriangle size={18} color="var(--mantine-color-red-6)" />
+            <Text fw={600}>이 여행을 삭제할까요?</Text>
+          </Group>
+        }
         centered
         size="sm"
+        radius="md"
       >
         <Text size="sm" c="dimmed" mb="lg">
           장소, 항공편, 숙소가 모두 사라지고 되돌릴 수 없어요.
@@ -232,7 +264,11 @@ export function TripHeaderActions({
           <Button variant="default" onClick={() => setDeleteOpen(false)}>
             취소
           </Button>
-          <Button color="red" onClick={handleDelete}>
+          <Button
+            color="red"
+            leftSection={<IconTrash size={16} />}
+            onClick={handleDelete}
+          >
             삭제
           </Button>
         </Group>
@@ -264,13 +300,25 @@ function ShareContent({
 }) {
   if (confirmDisable) {
     return (
-      <Stack gap="sm">
-        <Text size="sm">공유를 끄면 기존 링크는 더 이상 열리지 않아요.</Text>
+      <Stack gap="md">
+        <Alert
+          icon={<IconAlertTriangle size={18} />}
+          color="red"
+          variant="light"
+          radius="md"
+        >
+          공유를 끄면 기존 링크는 더 이상 열리지 않아요.
+        </Alert>
         <Group justify="flex-end" gap="xs">
-          <Button variant="default" size="xs" onClick={onCancelDisable}>
+          <Button variant="default" size="sm" onClick={onCancelDisable}>
             취소
           </Button>
-          <Button color="red" size="xs" onClick={onConfirmDisable}>
+          <Button
+            color="red"
+            size="sm"
+            leftSection={<IconTrash size={16} />}
+            onClick={onConfirmDisable}
+          >
             공유 끄기
           </Button>
         </Group>
@@ -279,10 +327,10 @@ function ShareContent({
   }
 
   return (
-    <Stack gap="sm">
+    <Stack gap="md">
       <Group justify="space-between" wrap="nowrap" align="flex-start">
-        <Box>
-          <Text size="sm" fw={500}>
+        <Box className={classes.section}>
+          <Text size="sm" fw={600}>
             링크로 공유
           </Text>
           <Text size="xs" c="dimmed" mt={2}>
@@ -300,47 +348,69 @@ function ShareContent({
           checked={enabled}
           onChange={(event) => onToggle(event.currentTarget.checked)}
           aria-label="링크로 공유"
+          color="teal"
+          size="md"
         />
       </Group>
 
       {enabled && (
-        <Stack gap={6}>
-          <Text size="xs" c="dimmed">
-            장소와 영역은 항상 공개돼요. 아래 항목은 켠 것만 보여요.
-          </Text>
-          {SHARE_OPTION_LABELS.map(({ key, label }) => (
-            <Switch
-              key={key}
-              size="sm"
-              label={label}
-              checked={options[key]}
-              onChange={(event) =>
-                onOptionChange(key, event.currentTarget.checked)
-              }
-            />
-          ))}
-        </Stack>
+        <>
+          <Divider className={classes.divider} />
+          <Stack gap={6} className={classes.section}>
+            <Text size="xs" fw={500} c="dimmed">
+              공개 항목
+            </Text>
+            <Text size="xs" c="dimmed">
+              장소와 영역은 항상 공개돼요. 아래 항목은 켠 것만 보여요.
+            </Text>
+            <Stack gap={10} className={classes.optionsStack} mt={4}>
+              {SHARE_OPTION_LABELS.map(({ key, label }) => (
+                <Group
+                  key={key}
+                  justify="space-between"
+                  wrap="nowrap"
+                  className={classes.optionRow}
+                >
+                  <Text size="sm">{label}</Text>
+                  <Switch
+                    size="sm"
+                    color="teal"
+                    checked={options[key]}
+                    onChange={(event) =>
+                      onOptionChange(key, event.currentTarget.checked)
+                    }
+                    aria-label={label}
+                  />
+                </Group>
+              ))}
+            </Stack>
+          </Stack>
+        </>
       )}
 
       {enabled && url && (
-        <Group gap="xs" wrap="nowrap">
-          <TextInput
-            value={url}
-            readOnly
-            className={classes.url}
-            aria-label="공유 링크"
-            leftSection={<IconLink size={14} aria-hidden="true" />}
-            onFocus={(event) => event.currentTarget.select()}
-          />
-          <Button
-            variant="light"
-            size="sm"
-            leftSection={<IconCopy size={14} />}
-            onClick={onCopy}
-          >
-            복사
-          </Button>
-        </Group>
+        <>
+          <Divider className={classes.divider} />
+          <Group gap="xs" wrap="nowrap" className={classes.urlRow}>
+            <TextInput
+              value={url}
+              readOnly
+              className={classes.url}
+              aria-label="공유 링크"
+              leftSection={<IconLink size={14} aria-hidden="true" />}
+              onFocus={(event) => event.currentTarget.select()}
+            />
+            <Button
+              variant="light"
+              color="teal"
+              size="sm"
+              leftSection={<IconCopy size={14} />}
+              onClick={onCopy}
+            >
+              복사
+            </Button>
+          </Group>
+        </>
       )}
     </Stack>
   );

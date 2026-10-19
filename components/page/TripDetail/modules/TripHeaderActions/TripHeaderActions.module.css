@@ -1,8 +1,60 @@
+.actions {
+  gap: 6px;
+}
+
+.shareButton {
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease,
+    color 120ms ease;
+}
+
 .shareOn {
+  background-color: var(--mantine-color-teal-0);
   border-color: var(--mantine-color-teal-4);
   color: var(--mantine-color-teal-7);
 }
+
+.shareOn:hover {
+  background-color: var(--mantine-color-teal-1);
+}
+
+.menuIcon {
+  transition: background-color 120ms ease;
+}
+
+.section {
+  padding: 4px 0;
+}
+
+.urlRow {
+  gap: 8px;
+}
+
 .url {
   min-width: 0;
   flex: 1;
+}
+
+.divider {
+  margin: 4px 0;
+}
+
+.optionsStack {
+  gap: 10px;
+}
+
+.optionRow {
+  padding: 2px 0;
+}
+
+@media (max-width: 47.99em) {
+  .actions {
+    gap: 4px;
+  }
+
+  .drawerBody {
+    padding: var(--mantine-spacing-md);
+    padding-bottom: max(var(--mantine-spacing-md), env(safe-area-inset-bottom));
+  }
 }
