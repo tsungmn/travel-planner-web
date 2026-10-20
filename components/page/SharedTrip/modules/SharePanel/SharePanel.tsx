@@ -9,7 +9,7 @@ import type {
   SharedStop,
   TripPublic,
 } from "@/types";
-import { formatPeriod } from "@/lib/date";
+import { addDays, formatPeriod } from "@/lib/date";
 import {
   EMPTY_DAY_FLIGHT_STOPS,
   flightStopsOfDay,
@@ -17,6 +17,9 @@ import {
 } from "@/lib/flightStops";
 import { AllDaysList } from "@/components/page/TripDetail/modules/AllDaysList";
 import { DayTabs } from "@/components/page/TripDetail/modules/DayTabs";
+import { DayWeatherSlot } from "@/components/page/TripDetail/modules/DayWeather/DayWeatherSlot";
+import { WeatherAttribution } from "@/components/page/TripDetail/modules/DayWeather/WeatherAttribution";
+import type { TripWeatherState } from "@/components/page/TripDetail/hooks/useTripWeather";
 import { FlightSection } from "@/components/page/TripDetail/modules/FlightSection";
 import { LodgingSection } from "@/components/page/TripDetail/modules/LodgingSection";
 import { ReadOnlyStopList } from "../ReadOnlyStopList";
@@ -31,6 +34,8 @@ type SharePanelProps = {
   flights: Flight[];
   /** 항공편에서 만든 공항 항목 (전체 일차) */
   flightStops: FlightStop[];
+  /** 일차별 날씨 */
+  weather: TripWeatherState;
   selectedDay: number | null;
   expandedStopId: string | null;
   hoveredStopId: string | null;
@@ -53,6 +58,7 @@ export function SharePanel({
   lodgings,
   flights,
   flightStops,
+  weather,
   selectedDay,
   expandedStopId,
   hoveredStopId,
@@ -111,9 +117,17 @@ export function SharePanel({
           onSelect={onSelectDay}
         />
 
+        {selectedDay !== null && (
+          <DayWeatherSlot
+            readOnly
+            weather={weather.byDate.get(addDays(trip.start_date, selectedDay))}
+          />
+        )}
+
         <Box ref={listRef}>
           {selectedDay === null ? (
             <AllDaysList
+              weather={weather}
               trip={trip}
               stops={stops}
               lodgings={lodgings}
@@ -135,6 +149,8 @@ export function SharePanel({
             />
           )}
         </Box>
+
+        <WeatherAttribution attribution={weather.attribution} />
 
         <Group gap={6} wrap="nowrap" className={classes.notice}>
           <IconAlertCircle size={14} aria-hidden="true" />

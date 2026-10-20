@@ -13,6 +13,10 @@ import type {
   MapBounds,
 } from "@/types";
 import { ApiError, request } from "@/lib/http";
+import type {
+  CityCandidate,
+  DayWeather,
+} from "@/components/page/TripDetail/modules/DayWeather/types";
 import { inclusiveDays } from "@/lib/date";
 
 /* ───────── 사용자 ───────── */
@@ -430,4 +434,117 @@ export async function deleteLodging(
     `${tripPath(tripId)}/lodgings/${encodeURIComponent(lodgingId)}`,
     { method: "DELETE" },
   );
+}
+
+/* ───────── 날씨 ───────── */
+
+export type TripWeather = {
+  /** 날씨를 보여 줄 수 있는 일차만, 일차 순서대로. 위치나 예보가 없는 일차는 빠집니다. */
+  days: DayWeather[];
+  /** 화면에 표기해야 하는 데이터 출처. */
+  attribution: string;
+};
+
+/** 내 여행의 일차별 날씨. 예보 서버가 응답하지 못하면 `days`가 빈 채로 옵니다. */
+export function getTripWeather(
+  tripId: string,
+  signal?: AbortSignal,
+): Promise<TripWeather> {
+  return request<TripWeather>(`/trips/${encodeURIComponent(tripId)}/weather`, {
+    signal,
+  });
+}
+
+/** 공유 링크로 본 여행의 일차별 날씨. 공개하지 않은 숙소는 위치 추정에 쓰이지 않습니다. */
+export function getSharedTripWeather(
+  token: string,
+  signal?: AbortSignal,
+): Promise<TripWeather> {
+  return request<TripWeather>(`/shared/${encodeURIComponent(token)}/weather`, {
+    signal,
+    redirectOnUnauthorized: false,
+  });
+}
+
+/* ───────── 일차별 날씨 도시 (사용자 지정) ───────── */
+
+type CitySearchResponse = {
+  items: {
+    id: string;
+    name: string;
+    country: string | null;
+    admin1: string | null;
+    lat: number;
+    lng: number;
+  }[];
+  attribution: string;
+};
+
+export type CitySearchResult = {
+  items: CityCandidate[];
+  /** 검색 결과를 보여 주는 화면에 표기해야 하는 데이터 출처. */
+  attribution: string;
+};
+
+/**
+ * 도시 검색. 한 글자 도시("빈")도 있어서 글자 수로 막지 않고, 공백뿐이면 요청하지 않습니다.
+ * 이름은 한국어로 받고, 한국어 이름이 없는 도시는 현지어로 옵니다.
+ */
+export async function searchCities(
+  query: string,
+  signal?: AbortSignal,
+): Promise<CitySearchResult> {
+  const q = query.trim();
+  if (!q) return { items: [], attribution: "" };
+  const params = new URLSearchParams({ q, lang: "ko" });
+  const raw = await request<CitySearchResponse>(`/cities/search?${params}`, {
+    signal,
+  });
+  return {
+    items: raw.items.map((c) => ({
+      id: c.id,
+      name: c.name,
+      country: c.country ?? undefined,
+      admin1: c.admin1 ?? undefined,
+      lat: c.lat,
+      lng: c.lng,
+    })),
+    attribution: raw.attribution,
+  };
+}
+
+/** 일차 범위(0부터, toDay 포함)의 날씨 도시를 정합니다. 이미 정한 일차는 바뀝니다. */
+export async function setDayCities(
+  tripId: string,
+  input: {
+    fromDay: number;
+    toDay: number;
+    city: Pick<CityCandidate, "name" | "lat" | "lng">;
+  },
+): Promise<void> {
+  await request(`${tripPath(tripId)}/day-cities`, {
+    method: "PUT",
+    body: {
+      from_day: input.fromDay,
+      to_day: input.toDay,
+      name: input.city.name,
+      lat: input.city.lat,
+      lng: input.city.lng,
+    },
+  });
+}
+
+/** 일차 범위(0부터, toDay 포함)의 지정을 지우고 자동 추정으로 되돌립니다. */
+export async function clearDayCities(
+  tripId: string,
+  fromDay: number,
+  toDay: number,
+): Promise<void> {
+  const params = new URLSearchParams({
+    from_day: String(fromDay),
+    to_day: String(toDay),
+  });
+  await request(`${tripPath(tripId)}/day-cities?${params}`, {
+    method: "DELETE",
+  });
 }

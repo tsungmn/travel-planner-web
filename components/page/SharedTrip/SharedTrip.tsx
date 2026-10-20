@@ -23,7 +23,8 @@ import type {
   TripArea,
   TripPublic,
 } from "@/types";
-import { getSharedTrip } from "@/lib/api";
+import { getSharedTrip, getSharedTripWeather } from "@/lib/api";
+import { useTripWeather } from "@/components/page/TripDetail/hooks/useTripWeather";
 import { isHiddenStop } from "@/lib/lodging";
 import { useAirports } from "@/lib/airports";
 import {
@@ -159,6 +160,13 @@ function SharedTripContent({ token }: { token: string }) {
     [data, airportIndex],
   );
 
+  // 일차별 날씨. 공유 화면의 일정은 바뀌지 않으니 여행을 불러온 뒤 한 번만 받습니다.
+  const loadWeather = useCallback(
+    (signal: AbortSignal) => getSharedTripWeather(token, signal),
+    [token],
+  );
+  const weather = useTripWeather(loadWeather, data ? token : null);
+
   // ----- 화면 상태 계산 -----
 
   const selectedDay =
@@ -260,6 +268,7 @@ function SharedTripContent({ token }: { token: string }) {
               lodgings={lodgings}
               flights={flights}
               flightStops={flightStops}
+              weather={weather}
               selectedDay={selectedDay}
               expandedStopId={expandedStopId}
               hoveredStopId={hoveredId}

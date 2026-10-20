@@ -11,13 +11,15 @@ import {
   Text,
 } from "@mantine/core";
 import classes from "./AllDaysList.module.css";
-import { formatDayDate } from "@/lib/date";
+import { addDays, formatDayDate } from "@/lib/date";
 import { IconHome } from "@tabler/icons-react";
 import { getDayColor } from "@/lib/dayColor";
 import { isHiddenStop, numberStops } from "@/lib/lodging";
 import { flightStopsOfDay, type FlightStop } from "@/lib/flightStops";
 import { AirportStopGroup } from "../AirportStopRow";
 import { DistanceSeparator } from "../DistanceSeparator";
+import type { TripWeatherState } from "../../hooks/useTripWeather";
+import { DayWeatherInline } from "../DayWeather/DayWeatherInline";
 
 export function AllDaysList({
   trip,
@@ -27,6 +29,7 @@ export function AllDaysList({
   hoveredStopId,
   onHoverStop,
   onSelect,
+  weather,
 }: {
   trip: TripPublic;
   stops: SharedStop[];
@@ -36,6 +39,8 @@ export function AllDaysList({
   hoveredStopId: string | null;
   onHoverStop: (id: string | null) => void;
   onSelect: (day: number) => void;
+  /** 일차별 날씨. 없으면 날씨를 그리지 않습니다. */
+  weather?: TripWeatherState;
 }) {
   return (
     <Stack gap="md">
@@ -67,6 +72,14 @@ export function AllDaysList({
               <Text size="sm" c="dimmed">
                 · {formatDayDate(trip.start_date, day)} · {placeCount}곳
               </Text>
+              {weather && (
+                <Box ml="auto">
+                  <DayWeatherInline
+                    weather={weather.byDate.get(addDays(trip.start_date, day))}
+                    reserveHeight={weather.loading}
+                  />
+                </Box>
+              )}
             </UnstyledButton>
             <Stack gap="xs">
               {airportGroup(airports.start)}

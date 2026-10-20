@@ -27,7 +27,7 @@ import type {
   TripArea,
   TripMode,
 } from "@/types";
-import { formatPeriod } from "@/lib/date";
+import { addDays, formatPeriod } from "@/lib/date";
 import {
   EMPTY_DAY_FLIGHT_STOPS,
   flightStopsOfDay,
@@ -38,6 +38,9 @@ import { AreaSection } from "../AreaSection";
 import type { AreaPatch } from "../AreaSection/AreaEditor";
 import { DayStopList } from "../DayStopList";
 import { DayTabs } from "../DayTabs";
+import { DayWeatherSlot } from "../DayWeather/DayWeatherSlot";
+import { WeatherAttribution } from "../DayWeather/WeatherAttribution";
+import type { TripWeatherState } from "../../hooks/useTripWeather";
 import { FlightSection } from "../FlightSection";
 import { LodgingSection } from "../LodgingSection";
 import { ModeSwitch } from "../ModeSwitch";
@@ -62,6 +65,10 @@ type TripPanelProps = {
   addAreaMode: boolean;
   selectedDay: number | null;
   saveStatus: SaveStatus;
+  /** 일차별 날씨 */
+  weather: TripWeatherState;
+  /** 선택한 일차의 날씨 도시 바꾸기. day는 0부터 시작합니다. */
+  onEditWeatherCity: (day: number) => void;
   expandedStopId: string | null;
   hoveredStopId: string | null;
   highlightedStopId: string | null;
@@ -111,6 +118,8 @@ export function TripPanel({
   addAreaMode,
   selectedDay,
   saveStatus,
+  weather,
+  onEditWeatherCity,
   expandedStopId,
   hoveredStopId,
   highlightedStopId,
@@ -275,9 +284,18 @@ export function TripPanel({
           />
         ) : (
           <>
+            {selectedDay !== null && (
+              <DayWeatherSlot
+                weather={weather.byDate.get(
+                  addDays(trip.start_date, selectedDay),
+                )}
+                onEditCity={() => onEditWeatherCity(selectedDay)}
+              />
+            )}
             <Box ref={listRef}>
               {selectedDay === null ? (
                 <AllDaysList
+                  weather={weather}
                   trip={trip}
                   stops={stops}
                   lodgings={lodgings}
@@ -316,6 +334,7 @@ export function TripPanel({
             >
               장소 추가
             </Button>
+            <WeatherAttribution attribution={weather.attribution} />
           </>
         )}
       </Stack>

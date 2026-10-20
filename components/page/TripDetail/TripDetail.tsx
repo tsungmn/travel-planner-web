@@ -26,6 +26,7 @@ import type {
   TripMode,
 } from "@/types";
 import {
+  clearDayCities,
   createArea,
   createFlight,
   createLodging,
@@ -38,8 +39,10 @@ import {
   disableShare,
   enableShare,
   getTrip,
+  getTripWeather,
   getUser,
   reorderStops,
+  setDayCities,
   updateArea,
   updateFlight,
   updateLodging,
@@ -61,12 +64,17 @@ import {
   isAirportMarkerId,
   type FlightStop,
 } from "@/lib/flightStops";
+import { addDays } from "@/lib/date";
 import { Header } from "@/components/common/Header";
 import { MAX_AREAS_PER_TRIP } from "@/constants/area";
 import { MAX_FLIGHTS_PER_TRIP, MAX_TRIP_DAYS } from "@/constants/trip";
 import classes from "./TripDetail.module.css";
 import { useDetailRoute } from "./hooks/useDetailRoute";
 import { usePlaceSearch } from "./hooks/usePlaceSearch";
+import { useTripWeather } from "./hooks/useTripWeather";
+import { weatherSignature } from "@/lib/weather";
+import { CityPickerModal } from "./modules/DayWeather/CityPickerModal";
+import type { CityApplyScope, CityCandidate } from "./modules/DayWeather/types";
 import {
   getSheetHeight,
   useBottomSheet,
@@ -423,6 +431,22 @@ function TripDetailContent({ id }: { id: string }) {
         : [],
     [data, airportIndex],
   );
+
+  // 일차별 날씨. 날씨 기준 위치가 달라질 수 있는 변경이 있을 때만 다시 받습니다.
+  const loadWeather = useCallback(
+    (signal: AbortSignal) => getTripWeather(id, signal),
+    [id],
+  );
+  // 사용자가 날씨 도시를 정하거나 되돌리면 올려서 날씨를 다시 받게 합니다.
+  // (서버에만 저장되는 값이라 weatherSignature에는 잡히지 않습니다)
+  const [cityVersion, setCityVersion] = useState(0);
+  const weatherKey = useMemo(
+    () => (data ? `${weatherSignature(data)}#${cityVersion}` : null),
+    [data, cityVersion],
+  );
+  const weather = useTripWeather(loadWeather, weatherKey);
+  // 도시 고르는 창. day는 0부터. 닫혀도 day를 남겨 두어, 닫히는 동안 내용이 깜빡이지 않게 합니다.
+  const [cityEdit, setCityEdit] = useState({ day: 0, open: false });
 
   // ----- 화면 상태 계산 -----
 
@@ -1042,6 +1066,29 @@ function TripDetailContent({ id }: { id: string }) {
     notifications.show({ message: "여행을 삭제했어요.", color: "teal" });
   }
 
+  // 창에서 고른 일차는 1부터, 서버는 0부터 셉니다.
+  async function handleApplyWeatherCity(
+    city: CityCandidate,
+    scope: CityApplyScope,
+  ) {
+    await setDayCities(id, {
+      fromDay: scope.fromDay - 1,
+      toDay: scope.toDay - 1,
+      city,
+    });
+    setCityVersion((v) => v + 1);
+    notifications.show({ message: "날씨 도시를 저장했어요.", color: "teal" });
+  }
+
+  async function handleResetWeatherCity(scope: CityApplyScope) {
+    await clearDayCities(id, scope.fromDay - 1, scope.toDay - 1);
+    setCityVersion((v) => v + 1);
+    notifications.show({
+      message: "날씨 도시를 자동 추정으로 되돌렸어요.",
+      color: "teal",
+    });
+  }
+
   async function handleSaveTripEdit(values: TripEditFormData) {
     if (formBusy.current) return;
     formBusy.current = true;
@@ -1152,6 +1199,8 @@ function TripDetailContent({ id }: { id: string }) {
                 addAreaMode={areaAddMode}
                 selectedDay={selectedDay}
                 saveStatus={saveStatus}
+                weather={weather}
+                onEditWeatherCity={(day) => setCityEdit({ day, open: true })}
                 expandedStopId={expandedStopId}
                 hoveredStopId={hoveredId}
                 highlightedStopId={newStopId}
@@ -1303,6 +1352,19 @@ function TripDetailContent({ id }: { id: string }) {
           />
         </Box>
       </Box>
+
+      <CityPickerModal
+        opened={cityEdit.open}
+        onClose={() => setCityEdit((s) => ({ ...s, open: false }))}
+        dayIndex={cityEdit.day + 1}
+        totalDays={trip.num_days}
+        canReset={
+          weather.byDate.get(addDays(trip.start_date, cityEdit.day))
+            ?.placeSource === "user"
+        }
+        onApply={handleApplyWeatherCity}
+        onReset={handleResetWeatherCity}
+      />
     </Box>
   );
 }
