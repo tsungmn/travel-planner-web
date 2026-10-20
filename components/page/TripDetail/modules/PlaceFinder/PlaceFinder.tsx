@@ -7,6 +7,7 @@ import {
   Loader,
   Paper,
   ScrollArea,
+  ScrollAreaAutosize,
   Switch,
   Text,
   TextInput,
@@ -199,7 +200,7 @@ export function PlaceFinder({
             </Text>
           </Group>
 
-          <ScrollArea.Autosize mah="min(40dvh, 18rem)" aria-live="polite">
+          <ScrollAreaAutosize mah="min(40dvh, 18rem)" aria-live="polite">
             {error ? (
               <Group gap="xs" className={classes.message} role="alert">
                 <IconAlertCircle size={16} aria-hidden="true" />
@@ -281,7 +282,7 @@ export function PlaceFinder({
                 Enter 키를 눌러 검색해 주세요
               </Text>
             ) : null}
-          </ScrollArea.Autosize>
+          </ScrollAreaAutosize>
         </div>
       )}
 

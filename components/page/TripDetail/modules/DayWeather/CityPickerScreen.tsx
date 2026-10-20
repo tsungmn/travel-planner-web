@@ -5,9 +5,9 @@ import {
   Box,
   Button,
   Group,
-  Modal,
   NativeSelect,
   ScrollArea,
+  ScrollAreaAutosize,
   SegmentedControl,
   Stack,
   Text,
@@ -20,71 +20,27 @@ import { useCitySearch } from "../../hooks/useCitySearch";
 import type { CityApplyScope, CityCandidate } from "./types";
 import classes from "./DayWeather.module.css";
 
-type CityPickerModalProps = {
-  opened: boolean;
-  onClose: () => void;
-  /** 도시를 고르는 기준 일차(1부터 시작). */
+type CityPickerScreenProps = {
   dayIndex: number;
-  /** 전체 일차 수. */
   totalDays: number;
-  /** 이 일차의 도시를 사용자가 정해 둔 상태인지. 그렇다면 자동 추정으로 되돌릴 수 있습니다. */
   canReset: boolean;
-  /** 선택한 도시와 적용 범위를 저장합니다. 실패하면 던지고, 창은 열린 채 안내를 보여 줍니다. */
   onApply: (city: CityCandidate, scope: CityApplyScope) => Promise<void>;
-  /** 범위의 지정을 지우고 자동 추정으로 되돌립니다. */
   onReset: (scope: CityApplyScope) => Promise<void>;
+  onBack: () => void;
 };
-
-export function CityPickerModal({
-  opened,
-  onClose,
-  dayIndex,
-  totalDays,
-  canReset,
-  onApply,
-  onReset,
-}: CityPickerModalProps) {
-  return (
-    <Modal
-      opened={opened}
-      onClose={onClose}
-      title={
-        <Group gap="xs">
-          <IconMapPin size={18} aria-hidden="true" />
-          <Text fw={600}>이 일차의 도시 바꾸기</Text>
-        </Group>
-      }
-      centered
-      size="md"
-      radius="md"
-      padding="md"
-    >
-      {/* 본문을 따로 두면 창이 닫힐 때 상태(검색어, 범위)가 함께 사라져, 열 때마다 처음 상태입니다. */}
-      <CityPickerBody
-        dayIndex={dayIndex}
-        totalDays={totalDays}
-        canReset={canReset}
-        onApply={onApply}
-        onReset={onReset}
-        onClose={onClose}
-      />
-    </Modal>
-  );
-}
 
 type ScopeKind = "day" | "to-end" | "range";
 
-function CityPickerBody({
+export function CityPickerScreen({
   dayIndex,
   totalDays,
   canReset,
   onApply,
   onReset,
-  onClose,
-}: Omit<CityPickerModalProps, "opened">) {
+  onBack,
+}: CityPickerScreenProps) {
   const [query, setQuery] = useState("");
   const [scopeKind, setScopeKind] = useState<ScopeKind>("day");
-  // "범위 지정"의 마지막 일차 (기준 일차 다음 날부터 고를 수 있음)
   const [rangeEnd, setRangeEnd] = useState(Math.min(dayIndex + 1, totalDays));
   const [pending, setPending] = useState(false);
   const [failed, setFailed] = useState(false);
@@ -99,13 +55,12 @@ function CityPickerBody({
         : Math.max(dayIndex, rangeEnd);
   const scope: CityApplyScope = { fromDay: dayIndex, toDay };
 
-  /** 저장이 끝나면 창을 닫고, 실패하면 열어 둔 채 안내합니다. */
   async function run(action: () => Promise<void>) {
     setPending(true);
     setFailed(false);
     try {
       await action();
-      onClose();
+      onBack();
     } catch {
       setFailed(true);
       setPending(false);
@@ -141,7 +96,7 @@ function CityPickerBody({
           <SegmentedControl
             fullWidth
             value={scopeKind}
-            onChange={(v) => setScopeKind(v as ScopeKind)}
+            onChange={(value) => setScopeKind(value as ScopeKind)}
             data={[
               { value: "day", label: "이 날만" },
               { value: "to-end", label: "끝까지" },
@@ -194,22 +149,24 @@ function CityPickerBody({
       </div>
 
       {search.status === "done" && search.items.length > 0 && (
-        <ScrollArea.Autosize mah={280} type="auto" offsetScrollbars>
+        <ScrollAreaAutosize mah={280} type="auto" offsetScrollbars>
           <Stack gap={4}>
-            {search.items.map((c) => {
-              const place = [c.admin1, c.country].filter(Boolean).join(", ");
+            {search.items.map((city) => {
+              const place = [city.admin1, city.country]
+                .filter(Boolean)
+                .join(", ");
               return (
                 <UnstyledButton
-                  key={c.id}
+                  key={city.id}
                   className={classes.cityResult}
-                  onClick={() => run(() => onApply(c, scope))}
+                  onClick={() => run(() => onApply(city, scope))}
                   disabled={pending}
-                  aria-label={`${c.name}${place ? `, ${place}` : ""} 선택`}
+                  aria-label={`${city.name}${place ? `, ${place}` : ""} 선택`}
                 >
                   <IconMapPin size={16} aria-hidden="true" />
                   <Box>
                     <Text size="sm" fw={500}>
-                      {c.name}
+                      {city.name}
                     </Text>
                     {place && (
                       <Text size="xs" c="dimmed">
@@ -221,7 +178,7 @@ function CityPickerBody({
               );
             })}
           </Stack>
-        </ScrollArea.Autosize>
+        </ScrollAreaAutosize>
       )}
 
       {failed && (
@@ -247,7 +204,7 @@ function CityPickerBody({
             자동 추정으로 되돌리기
           </Button>
         )}
-        <Button variant="default" onClick={onClose} disabled={pending}>
+        <Button variant="default" onClick={onBack} disabled={pending}>
           취소
         </Button>
       </Group>

@@ -73,7 +73,6 @@ import { useDetailRoute } from "./hooks/useDetailRoute";
 import { usePlaceSearch } from "./hooks/usePlaceSearch";
 import { useTripWeather } from "./hooks/useTripWeather";
 import { weatherSignature } from "@/lib/weather";
-import { CityPickerModal } from "./modules/DayWeather/CityPickerModal";
 import type { CityApplyScope, CityCandidate } from "./modules/DayWeather/types";
 import {
   getSheetHeight,
@@ -445,8 +444,6 @@ function TripDetailContent({ id }: { id: string }) {
     [data, cityVersion],
   );
   const weather = useTripWeather(loadWeather, weatherKey);
-  // 도시 고르는 창. day는 0부터. 닫혀도 day를 남겨 두어, 닫히는 동안 내용이 깜빡이지 않게 합니다.
-  const [cityEdit, setCityEdit] = useState({ day: 0, open: false });
 
   // ----- 화면 상태 계산 -----
 
@@ -1200,7 +1197,9 @@ function TripDetailContent({ id }: { id: string }) {
                 selectedDay={selectedDay}
                 saveStatus={saveStatus}
                 weather={weather}
-                onEditWeatherCity={(day) => setCityEdit({ day, open: true })}
+                onEditWeatherCity={(day) =>
+                  route.openView("weather-city", { day })
+                }
                 expandedStopId={expandedStopId}
                 hoveredStopId={hoveredId}
                 highlightedStopId={newStopId}
@@ -1260,6 +1259,20 @@ function TripDetailContent({ id }: { id: string }) {
                   onDeleteLodging={handleDeleteLodging}
                   onSaveTripEdit={handleSaveTripEdit}
                   onGoToDay={route.closeViewToDay}
+                  weatherCity={
+                    subView === "weather-city" && selectedDay !== null
+                      ? {
+                          dayIndex: selectedDay + 1,
+                          totalDays: trip.num_days,
+                          canReset:
+                            weather.byDate.get(
+                              addDays(trip.start_date, selectedDay),
+                            )?.placeSource === "user",
+                          onApply: handleApplyWeatherCity,
+                          onReset: handleResetWeatherCity,
+                        }
+                      : undefined
+                  }
                   pickMode={pickMode}
                   onPickModeChange={handlePickModeChange}
                   mapSearch={{
@@ -1352,19 +1365,6 @@ function TripDetailContent({ id }: { id: string }) {
           />
         </Box>
       </Box>
-
-      <CityPickerModal
-        opened={cityEdit.open}
-        onClose={() => setCityEdit((s) => ({ ...s, open: false }))}
-        dayIndex={cityEdit.day + 1}
-        totalDays={trip.num_days}
-        canReset={
-          weather.byDate.get(addDays(trip.start_date, cityEdit.day))
-            ?.placeSource === "user"
-        }
-        onApply={handleApplyWeatherCity}
-        onReset={handleResetWeatherCity}
-      />
     </Box>
   );
 }

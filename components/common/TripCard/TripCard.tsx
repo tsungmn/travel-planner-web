@@ -10,6 +10,9 @@ import {
   Card,
   Group,
   Menu,
+  MenuDropdown,
+  MenuItem,
+  MenuTarget,
   Modal,
   Stack,
   Text,
@@ -128,7 +131,7 @@ export function TripCard({ trip, past = false, onDeleted }: TripCardProps) {
             onClick={(event) => event.stopPropagation()}
           >
             <Menu position="bottom-end" withinPortal shadow="md" radius="md">
-              <Menu.Target>
+              <MenuTarget>
                 <ActionIcon
                   variant="default"
                   color="white"
@@ -138,16 +141,16 @@ export function TripCard({ trip, past = false, onDeleted }: TripCardProps) {
                 >
                   <IconDotsVertical size={18} aria-hidden="true" />
                 </ActionIcon>
-              </Menu.Target>
-              <Menu.Dropdown onClick={(event) => event.stopPropagation()}>
-                <Menu.Item
+              </MenuTarget>
+              <MenuDropdown onClick={(event) => event.stopPropagation()}>
+                <MenuItem
                   color="red"
                   leftSection={<IconTrash size={16} aria-hidden="true" />}
                   onClick={() => setDeleteOpen(true)}
                 >
                   삭제
-                </Menu.Item>
-              </Menu.Dropdown>
+                </MenuItem>
+              </MenuDropdown>
             </Menu>
           </Box>
         </Box>
