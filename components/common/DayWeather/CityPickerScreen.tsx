@@ -6,7 +6,6 @@ import {
   Button,
   Group,
   NativeSelect,
-  ScrollArea,
   ScrollAreaAutosize,
   SegmentedControl,
   Stack,

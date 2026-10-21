@@ -82,7 +82,7 @@ import { useDevWeatherScenario } from "@/hooks/useDevWeatherScenario";
 import { usePlaceSearch } from "@/hooks/usePlaceSearch";
 import { useTripWeather } from "@/hooks/useTripWeather";
 
-import { AreaEditControl, AreaLayer } from "@/components/common/AreaLayer";
+import { AreaEditControl } from "@/components/common/AreaLayer";
 import { DetailLoading, DetailMessage } from "@/components/common/DetailState";
 import { Header } from "@/components/common/Header";
 import {

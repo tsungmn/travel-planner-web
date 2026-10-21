@@ -87,6 +87,8 @@ function redirectToLogin() {
   if (typeof window === "undefined") return;
   const { pathname, search } = window.location;
   if (pathname === "/login") return;
+  // React 바깥(lib)에서 호출되고 클라이언트 상태를 초기화하는 전체 페이지 이동이 필요해 router를 쓰지 않습니다.
+  // eslint-disable-next-line @next/next/no-location-assign-relative-destination
   window.location.assign(
     `/login?next=${encodeURIComponent(`${pathname}${search}`)}`,
   );

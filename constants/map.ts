@@ -2,7 +2,6 @@ import { MapProps } from "react-map-gl/maplibre";
 import { koreaBoundaryStyle } from "@/lib/koreaBoundary";
 import {
   flatBuildings,
-  hideLayers,
   overrideLabelText,
   StyleTransform,
 } from "@/lib/transformStyle";
