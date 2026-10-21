@@ -24,7 +24,7 @@ import type {
   TripPublic,
 } from "@/types";
 import { getSharedTrip, getSharedTripWeather } from "@/lib/api";
-import { useDevWeatherScenario } from "@/components/page/TripDetail/hooks/useDevWeatherScenario";
+import { useDevWeatherScenario } from "@/hooks/useDevWeatherScenario";
 import { useTripWeather } from "@/hooks/useTripWeather";
 import { isHiddenStop } from "@/lib/lodging";
 import { isTripEnded } from "@/lib/weather";
