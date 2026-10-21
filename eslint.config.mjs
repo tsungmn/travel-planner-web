@@ -15,6 +15,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // postinstall(copy-maplibre-worker)이 node_modules에서 복사해 오는 압축된 파일이라 검사하지 않는다.
+    "public/maplibre-gl-*.mjs",
   ]),
   ...storybook.configs["flat/recommended"],
 ]);

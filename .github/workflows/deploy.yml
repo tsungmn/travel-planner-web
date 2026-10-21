@@ -21,9 +21,38 @@ env:
   # 같은 namespace 안의 api Service 이름 (base/api/service.yaml)
   API_ORIGIN: http://api-service
   SITE_URL: https://travel.tsungmn.com
+  # Cloudflare Turnstile 사이트 키(공개 값). GitHub 저장소의 Settings > Variables 에 TURNSTILE_SITE_KEY 로 넣는다.
+  # 비어 있으면 봇 방지 위젯 없이 빌드된다.
+  TURNSTILE_SITE_KEY: ${{ vars.TURNSTILE_SITE_KEY }}
 
 jobs:
+  # 타입, 린트, 보안 점검이 통과해야만 이미지를 만들어 배포한다.
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      # postinstall(copy-maplibre-worker)이 public/ 에 파일을 만든다. 건너뛰지 않는다.
+      - run: npm ci
+        env:
+          HUSKY: "0"
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "1"
+
+      # app/layout.tsx 의 LayoutProps 같은 전역 타입은 next typegen 이 만든다.
+      - run: npx next typegen
+      - run: npx tsc --noEmit
+      - run: npm run lint
+
+      # 실제로 배포되는 의존성(devDependencies 제외)에 알려진 취약점이 있으면 멈춘다.
+      - run: npm audit --omit=dev --audit-level=high
+
   build:
+    needs: check
     runs-on: ubuntu-latest
     outputs:
       image: ${{ steps.vars.outputs.image }}
@@ -51,6 +80,7 @@ jobs:
           build-args: |
             API_ORIGIN=${{ env.API_ORIGIN }}
             NEXT_PUBLIC_SITE_URL=${{ env.SITE_URL }}
+            NEXT_PUBLIC_TURNSTILE_SITE_KEY=${{ env.TURNSTILE_SITE_KEY }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -71,6 +101,13 @@ jobs:
             | grep -qi '^referrer-policy: no-referrer'
           curl -fsS -D - -o /dev/null http://localhost:3000/reset-password \
             | grep -qi '^x-robots-tag: noindex'
+          # 모든 페이지에 보안 헤더가 붙는지 (클릭재킹 방지, 콘텐츠 보안 정책, HTTPS 강제)
+          curl -fsS -D - -o /dev/null http://localhost:3000/login > /tmp/login-headers.txt
+          grep -qi '^x-content-type-options: nosniff' /tmp/login-headers.txt
+          grep -qi '^x-frame-options: deny' /tmp/login-headers.txt
+          grep -qi "^content-security-policy: .*frame-ancestors 'none'" /tmp/login-headers.txt
+          grep -qi '^strict-transport-security: max-age=' /tmp/login-headers.txt
+          ! grep -qi '^x-powered-by' /tmp/login-headers.txt
           # root 로 실행되고 있지 않은지
           test "$(docker exec web-smoke id -u)" != "0"
 
@@ -98,6 +135,7 @@ jobs:
           build-args: |
             API_ORIGIN=${{ env.API_ORIGIN }}
             NEXT_PUBLIC_SITE_URL=${{ env.SITE_URL }}
+            NEXT_PUBLIC_TURNSTILE_SITE_KEY=${{ env.TURNSTILE_SITE_KEY }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
           provenance: false

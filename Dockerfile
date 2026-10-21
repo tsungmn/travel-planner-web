@@ -27,6 +27,8 @@ ENV API_ORIGIN=${API_ORIGIN}
 # NEXT_PUBLIC_* 도 빌드 시점에 번들에 박힌다. 비어 있으면 설정하지 않은 것으로 취급한다.
 # (빈 문자열로 박히면 useSiteOrigin 이 window.location.origin 대신 ""를 쓰게 된다)
 ARG NEXT_PUBLIC_SITE_URL=
+# Cloudflare Turnstile 사이트 키 (공개 값). 비어 있으면 봇 방지 위젯을 쓰지 않는다.
+ARG NEXT_PUBLIC_TURNSTILE_SITE_KEY=
 
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
@@ -39,6 +41,7 @@ RUN test -s public/data/airports.json \
     || (echo "public/data/airports.json 이 없습니다. .gitignore 의 /public/data/ 를 지우고 커밋하세요." >&2; exit 1)
 
 RUN if [ -z "$NEXT_PUBLIC_SITE_URL" ]; then unset NEXT_PUBLIC_SITE_URL; fi; \
+    if [ -z "$NEXT_PUBLIC_TURNSTILE_SITE_KEY" ]; then unset NEXT_PUBLIC_TURNSTILE_SITE_KEY; fi; \
     npm run build
 
 # next.config.ts 에 output: "standalone" 이 없으면 여기서 멈춘다

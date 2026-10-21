@@ -52,6 +52,8 @@ export function AuthAlerts({
               </button>
             </>
           )}
+          {errorCode === "captchaFailed" &&
+            "보안 확인에 실패했어요. 광고 차단 기능을 끄고 다시 시도해 주세요."}
           {errorCode === "network" &&
             "인터넷 연결을 확인하고 다시 시도해 주세요."}
           {errorCode === "tooManyAttempts" && "잠시 후 다시 시도해 주세요."}

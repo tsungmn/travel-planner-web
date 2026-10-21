@@ -1,4 +1,5 @@
 import { ApiError, request } from "@/lib/http";
+import { getTurnstileToken } from "@/lib/turnstile";
 
 export type AuthErrorCode =
   | "invalidCredentials"
@@ -6,6 +7,7 @@ export type AuthErrorCode =
   | "emailNotVerified"
   | "tooManyAttempts"
   | "invalidToken"
+  | "captchaFailed"
   | "network"
   | "unknown";
 
@@ -34,6 +36,19 @@ function toAuthError(
     if (known[error.status]) return new AuthError(known[error.status]);
   }
   return new AuthError("unknown");
+}
+
+/**
+ * 봇 방지가 켜진 요청(가입, 비밀번호 찾기, 인증 메일 재전송)의 본문에 Turnstile 토큰을 붙입니다.
+ * 사이트 키가 없으면 그대로 돌려줍니다.
+ */
+async function withCaptcha<B extends object>(body: B): Promise<B> {
+  try {
+    const token = await getTurnstileToken();
+    return token ? { ...body, turnstile_token: token } : body;
+  } catch {
+    throw new AuthError("captchaFailed");
+  }
 }
 
 async function callAuth<T>(
@@ -66,11 +81,11 @@ export async function signup(input: {
 }): Promise<{ email: string }> {
   // 이름은 선택이라 비어 있으면 아예 보내지 않습니다. (빈 문자열이 그대로 저장되지 않게)
   const { name, ...rest } = input;
-  const body = name ? { ...rest, name } : rest;
+  const body = await withCaptcha(name ? { ...rest, name } : rest);
   const result = await callAuth<{ email: string } | void>(
     "/auth/register",
     body,
-    { 409: "emailTaken", 429: "tooManyAttempts" },
+    { 400: "captchaFailed", 409: "emailTaken", 429: "tooManyAttempts" },
   );
   // 201 응답 본문이 없는 환경도 고려해 이메일을 폼 값으로 채웁니다.
   return { email: input.email, ...(result ?? {}) };
@@ -88,23 +103,17 @@ export async function verifyEmail(token: string): Promise<void> {
 }
 
 export async function resendVerification(email: string): Promise<void> {
-  await callAuth(
-    "/auth/resend-verification",
-    { email },
-    {
-      429: "tooManyAttempts",
-    },
-  );
+  await callAuth("/auth/resend-verification", await withCaptcha({ email }), {
+    400: "captchaFailed",
+    429: "tooManyAttempts",
+  });
 }
 
 export async function forgotPassword(email: string): Promise<void> {
-  await callAuth(
-    "/auth/forgot-password",
-    { email },
-    {
-      429: "tooManyAttempts",
-    },
-  );
+  await callAuth("/auth/forgot-password", await withCaptcha({ email }), {
+    400: "captchaFailed",
+    429: "tooManyAttempts",
+  });
 }
 
 export async function resetPassword(input: {

@@ -34,13 +34,12 @@ export function useTripWeather(
     setRetryVersion((value) => value + 1);
   }, []);
 
+  // 개발용 mock이 있으면 서버 응답 대신 그 값을 그대로 씁니다. (effect에서 state를 바꾸지 않고 계산합니다)
+  const useMock = signature !== null && mock !== undefined;
+  const shown: Settled | null = useMock ? (mock ?? "failed") : settled;
+
   useEffect(() => {
-    if (signature === null) return;
-    if (mock !== undefined) {
-      if (mock === null) setSettled("failed");
-      else setSettled(mock);
-      return;
-    }
+    if (signature === null || useMock) return;
     const controller = new AbortController();
     const timer = setTimeout(() => {
       load(controller.signal)
@@ -54,10 +53,10 @@ export function useTripWeather(
       clearTimeout(timer);
       controller.abort();
     };
-  }, [load, mock, signature, retryVersion]);
+  }, [load, signature, useMock, retryVersion]);
 
   return useMemo(() => {
-    if (settled === null)
+    if (shown === null)
       return {
         byDate: EMPTY,
         summary: null,
@@ -68,7 +67,7 @@ export function useTripWeather(
         failed: false,
         retry,
       };
-    if (settled === "failed")
+    if (shown === "failed")
       return {
         byDate: EMPTY,
         summary: null,
@@ -80,14 +79,14 @@ export function useTripWeather(
         retry,
       };
     return {
-      byDate: new Map(settled.days.map((day) => [day.date, day])),
-      summary: settled.summary,
-      attribution: settled.days.length > 0 ? settled.attribution : null,
-      fetchedAt: settled.fetchedAt,
-      stale: settled.stale,
+      byDate: new Map(shown.days.map((day) => [day.date, day])),
+      summary: shown.summary,
+      attribution: shown.days.length > 0 ? shown.attribution : null,
+      fetchedAt: shown.fetchedAt,
+      stale: shown.stale,
       loading: false,
       failed: false,
       retry,
     };
-  }, [retry, settled, signature]);
+  }, [retry, shown, signature]);
 }
