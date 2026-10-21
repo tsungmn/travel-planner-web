@@ -1,3 +1,11 @@
+import { todayLocal } from "@/lib/date";
+
+/**
+ * 이미 끝난 여행인지. 끝난 여행은 날씨를 받지도, 보여 주지도 않습니다.
+ * (지난 날의 "예보"나 "평년"은 의미가 없고, 날씨 도시를 정하라는 안내도 필요 없습니다)
+ */
+export const isTripEnded = (endDate: string) => endDate < todayLocal();
+
 /**
  * 일차별 날씨를 다시 받아야 하는지 판단하는 서명.
  *

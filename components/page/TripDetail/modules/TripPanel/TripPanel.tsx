@@ -1,5 +1,6 @@
 import type { Ref } from "react";
 import Link from "next/link";
+
 import {
   Box,
   Button,
@@ -27,24 +28,29 @@ import type {
   TripArea,
   TripMode,
 } from "@/types";
+
 import { addDays, formatPeriod } from "@/lib/date";
 import {
   EMPTY_DAY_FLIGHT_STOPS,
   flightStopsOfDay,
   type FlightStop,
 } from "@/lib/flightStops";
-import { AllDaysList } from "../AllDaysList";
+
+import type { TripWeatherState } from "@/hooks/useTripWeather";
+
+import { AllDaysList } from "@/components/common/AllDaysList";
+import { DayTabs } from "@/components/common/DayTabs";
+import { DayWeatherSlot } from "@/components/common/DayWeather/DayWeatherSlot";
+import { WeatherAttribution } from "@/components/common/DayWeather/WeatherAttribution";
+import { FlightSection } from "@/components/common/FlightSection";
+import { LodgingSection } from "@/components/common/LodgingSection";
+
 import { AreaSection } from "../AreaSection";
 import type { AreaPatch } from "../AreaSection/AreaEditor";
 import { DayStopList } from "../DayStopList";
-import { DayTabs } from "../DayTabs";
-import { DayWeatherSlot } from "../DayWeather/DayWeatherSlot";
-import { WeatherAttribution } from "../DayWeather/WeatherAttribution";
-import type { TripWeatherState } from "../../hooks/useTripWeather";
-import { FlightSection } from "../FlightSection";
-import { LodgingSection } from "../LodgingSection";
 import { ModeSwitch } from "../ModeSwitch";
 import { TripHeaderActions } from "../TripHeaderActions";
+
 import classes from "./TripPanel.module.css";
 
 export type SaveStatus = "saved" | "saving" | "error";
@@ -303,6 +309,7 @@ export function TripPanel({
                   hoveredStopId={hoveredStopId}
                   onHoverStop={onHoverStop}
                   onSelect={onSelectDay}
+                  onPickCity={() => onEditWeatherCity(0)}
                 />
               ) : (
                 <DayStopList

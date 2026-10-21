@@ -6,7 +6,6 @@ import {
   Group,
   Loader,
   Paper,
-  ScrollArea,
   ScrollAreaAutosize,
   Switch,
   Text,
@@ -27,7 +26,7 @@ import {
 
 import type { PlaceResult } from "@/types";
 import { NEARBY_SEARCH_RADIUS_KM } from "@/constants/search";
-import type { PlaceSearchError } from "../../hooks/usePlaceSearch";
+import type { PlaceSearchError } from "@/hooks/usePlaceSearch";
 import classes from "./PlaceFinder.module.css";
 
 /** 지도에 마커로 보여 주는 결과 개수. 목록의 번호와 마커의 번호가 같습니다. */

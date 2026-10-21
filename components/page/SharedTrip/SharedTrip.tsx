@@ -24,28 +24,24 @@ import type {
   TripPublic,
 } from "@/types";
 import { getSharedTrip, getSharedTripWeather } from "@/lib/api";
-import { useTripWeather } from "@/components/page/TripDetail/hooks/useTripWeather";
+import { useDevWeatherScenario } from "@/components/page/TripDetail/hooks/useDevWeatherScenario";
+import { useTripWeather } from "@/hooks/useTripWeather";
 import { isHiddenStop } from "@/lib/lodging";
+import { isTripEnded } from "@/lib/weather";
 import { useAirports } from "@/lib/airports";
 import {
   buildFlightStops,
   isAirportMarkerId,
   type FlightStop,
 } from "@/lib/flightStops";
-import {
-  getSheetHeight,
-  useBottomSheet,
-} from "@/components/page/TripDetail/hooks/useBottomSheet";
-import { useDetailRoute } from "@/components/page/TripDetail/hooks/useDetailRoute";
-import {
-  DetailLoading,
-  DetailMessage,
-} from "@/components/page/TripDetail/modules/DetailState";
+import { getSheetHeight, useBottomSheet } from "@/hooks/useBottomSheet";
+import { useDetailRoute } from "@/hooks/useDetailRoute";
+import { DetailLoading, DetailMessage } from "@/components/common/DetailState";
 import {
   TripMap,
   type FlyTarget,
   type MapInsets,
-} from "@/components/page/TripDetail/modules/TripMap";
+} from "@/components/common/TripMap";
 import { SharePanel } from "./modules/SharePanel";
 import { ShareTopBar } from "./modules/ShareTopBar";
 import classes from "./SharedTrip.module.css";
@@ -165,7 +161,14 @@ function SharedTripContent({ token }: { token: string }) {
     (signal: AbortSignal) => getSharedTripWeather(token, signal),
     [token],
   );
-  const weather = useTripWeather(loadWeather, data ? token : null);
+  // 개발 전용(운영 빌드에서는 mock도 선택 UI도 없음). 만들기 어려운 날씨 상태를 볼 때 씁니다.
+  const { mock: mockWeather, picker: weatherScenarioPicker } =
+    useDevWeatherScenario(data?.trip);
+  const weather = useTripWeather(
+    loadWeather,
+    data && !isTripEnded(data.trip.end_date) ? token : null,
+    mockWeather,
+  );
 
   // ----- 화면 상태 계산 -----
 
@@ -261,6 +264,7 @@ function SharedTripContent({ token }: { token: string }) {
             <span />
           </button>
           <Box className={classes.panelBody}>
+            {weatherScenarioPicker}
             <SharePanel
               trip={trip}
               share={share}

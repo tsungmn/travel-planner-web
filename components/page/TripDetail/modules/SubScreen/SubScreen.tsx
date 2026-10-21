@@ -6,9 +6,12 @@ import type {
   Trip,
   TripArea,
 } from "@/types";
-import type { DetailView } from "../../hooks/useDetailRoute";
-import { CityPickerScreen } from "../DayWeather/CityPickerScreen";
-import type { CityApplyScope, CityCandidate } from "../DayWeather/types";
+import type { DetailView } from "@/hooks/useDetailRoute";
+import { CityPickerScreen } from "@/components/common/DayWeather/CityPickerScreen";
+import type {
+  CityApplyScope,
+  CityCandidate,
+} from "@/components/common/DayWeather/types";
 import { FlightForm, type FlightFormData } from "../FlightForm";
 import { LodgingForm, type LodgingFormData } from "../LodgingForm";
 import { PanelSubScreen } from "../PanelSubScreen";

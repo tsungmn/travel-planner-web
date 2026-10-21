@@ -24,7 +24,7 @@ import { getDayColor } from "@/lib/dayColor";
 import { uniqueAirportStops, type FlightStop } from "@/lib/flightStops";
 import { findLodgingFor, isHiddenStop } from "@/lib/lodging";
 import { DEFAULT_VIEW_STATE } from "@/constants/map";
-import { AreaLayer, type AreaEditControl } from "../AreaLayer";
+import { AreaLayer, type AreaEditControl } from "@/components/common/AreaLayer";
 import classes from "./TripMap.module.css";
 
 const MapContainer = dynamic(() => import("@/components/common/MapContainer"), {

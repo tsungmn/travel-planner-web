@@ -28,7 +28,7 @@ import {
   sortFlightsByDirection,
   totalTravelMs,
 } from "@/lib/flightTime";
-import { InfoSection } from "../InfoSection";
+import { InfoSection } from "@/components/common/InfoSection";
 import classes from "./FlightSection.module.css";
 
 type FlightSectionProps = {

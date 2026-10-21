@@ -15,13 +15,13 @@ import {
   flightStopsOfDay,
   type FlightStop,
 } from "@/lib/flightStops";
-import { AllDaysList } from "@/components/page/TripDetail/modules/AllDaysList";
-import { DayTabs } from "@/components/page/TripDetail/modules/DayTabs";
-import { DayWeatherSlot } from "@/components/page/TripDetail/modules/DayWeather/DayWeatherSlot";
-import { WeatherAttribution } from "@/components/page/TripDetail/modules/DayWeather/WeatherAttribution";
-import type { TripWeatherState } from "@/components/page/TripDetail/hooks/useTripWeather";
-import { FlightSection } from "@/components/page/TripDetail/modules/FlightSection";
-import { LodgingSection } from "@/components/page/TripDetail/modules/LodgingSection";
+import { AllDaysList } from "@/components/common/AllDaysList";
+import { DayTabs } from "@/components/common/DayTabs";
+import { DayWeatherSlot } from "@/components/common/DayWeather/DayWeatherSlot";
+import { WeatherAttribution } from "@/components/common/DayWeather/WeatherAttribution";
+import type { TripWeatherState } from "@/hooks/useTripWeather";
+import { FlightSection } from "@/components/common/FlightSection";
+import { LodgingSection } from "@/components/common/LodgingSection";
 import { ReadOnlyStopList } from "../ReadOnlyStopList";
 import classes from "./SharePanel.module.css";
 
@@ -135,6 +135,7 @@ export function SharePanel({
               hoveredStopId={hoveredStopId}
               onHoverStop={onHoverStop}
               onSelect={onSelectDay}
+              readOnly
             />
           ) : (
             <ReadOnlyStopList

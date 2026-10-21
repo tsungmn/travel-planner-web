@@ -16,10 +16,12 @@ import { IconHome } from "@tabler/icons-react";
 import { getDayColor } from "@/lib/dayColor";
 import { isHiddenStop, numberStops } from "@/lib/lodging";
 import { flightStopsOfDay, type FlightStop } from "@/lib/flightStops";
-import { AirportStopGroup } from "../AirportStopRow";
-import { DistanceSeparator } from "../DistanceSeparator";
-import type { TripWeatherState } from "../../hooks/useTripWeather";
-import { DayWeatherInline } from "../DayWeather/DayWeatherInline";
+import { AirportStopGroup } from "@/components/common/AirportStopRow";
+import { DistanceSeparator } from "@/components/common/DistanceSeparator";
+import type { TripWeatherState } from "@/hooks/useTripWeather";
+import { isTripEnded } from "@/lib/weather";
+import { DayWeatherInline } from "@/components/common/DayWeather/DayWeatherInline";
+import { TripWeatherSummary } from "@/components/common/DayWeather/TripWeatherSummary";
 
 export function AllDaysList({
   trip,
@@ -30,6 +32,8 @@ export function AllDaysList({
   onHoverStop,
   onSelect,
   weather,
+  readOnly = false,
+  onPickCity,
 }: {
   trip: TripPublic;
   stops: SharedStop[];
@@ -41,9 +45,24 @@ export function AllDaysList({
   onSelect: (day: number) => void;
   /** 일차별 날씨. 없으면 날씨를 그리지 않습니다. */
   weather?: TripWeatherState;
+  readOnly?: boolean;
+  onPickCity?: () => void;
 }) {
   return (
     <Stack gap="md">
+      {weather && !isTripEnded(trip.end_date) && (
+        <TripWeatherSummary
+          summary={weather.summary}
+          fetchedAt={weather.fetchedAt}
+          stale={weather.stale}
+          loading={weather.loading}
+          failed={weather.failed}
+          hasDays={weather.byDate.size > 0}
+          readOnly={readOnly}
+          onRetry={weather.retry}
+          onPickCity={onPickCity}
+        />
+      )}
       {Array.from({ length: trip.num_days }, (_, day) => {
         const dayStops = stops
           .filter((stop) => stop.day_index === day)

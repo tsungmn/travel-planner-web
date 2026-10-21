@@ -16,7 +16,7 @@ import { ApiError, request } from "@/lib/http";
 import type {
   CityCandidate,
   DayWeather,
-} from "@/components/page/TripDetail/modules/DayWeather/types";
+} from "@/components/common/DayWeather/types";
 import { inclusiveDays } from "@/lib/date";
 
 /* ───────── 사용자 ───────── */
@@ -439,9 +439,11 @@ export async function deleteLodging(
 /* ───────── 날씨 ───────── */
 
 export type TripWeather = {
-  /** 날씨를 보여 줄 수 있는 일차만, 일차 순서대로. 위치나 예보가 없는 일차는 빠집니다. */
   days: DayWeather[];
-  /** 화면에 표기해야 하는 데이터 출처. */
+  summary:
+    import("@/components/common/DayWeather/types").TripWeatherSummary | null;
+  fetchedAt: string | null;
+  stale: boolean;
   attribution: string;
 };
 

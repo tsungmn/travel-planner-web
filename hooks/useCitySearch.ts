@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 
 import { searchCities } from "@/lib/api";
-import type { CityCandidate } from "../modules/DayWeather/types";
+import type { CityCandidate } from "@/components/common/DayWeather/types";
 
 /** 입력을 멈춘 뒤 이만큼 기다렸다가 검색합니다. 한 글자마다 요청이 나가지 않게 합니다. */
 const SEARCH_DELAY_MS = 300;

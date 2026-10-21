@@ -34,13 +34,11 @@ const CONDITION_META: Record<WeatherCondition, ConditionMeta> = {
   thunderstorm: { icon: IconBolt },
 };
 
-export function getConditionMeta(condition: WeatherCondition): ConditionMeta {
-  return CONDITION_META[condition] ?? CONDITION_META["partly-cloudy"];
-}
-
-const PRECIP_HIGH_THRESHOLD = 40;
-
-/** 강수확률이 높아서 우산으로 강조할 정도인지. */
-export function isPrecipHigh(p: number | null | undefined): boolean {
-  return typeof p === "number" && p >= PRECIP_HIGH_THRESHOLD;
+export function getConditionMeta(
+  condition?: WeatherCondition | null,
+): ConditionMeta {
+  return (
+    CONDITION_META[condition ?? "partly-cloudy"] ??
+    CONDITION_META["partly-cloudy"]
+  );
 }

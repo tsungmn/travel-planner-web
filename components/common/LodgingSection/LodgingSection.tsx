@@ -8,7 +8,7 @@ import {
 
 import type { Lodging } from "@/types";
 import { diffDays, formatDateShort } from "@/lib/date";
-import { InfoSection } from "../InfoSection";
+import { InfoSection } from "@/components/common/InfoSection";
 import classes from "./LodgingSection.module.css";
 
 type LodgingSectionProps = {

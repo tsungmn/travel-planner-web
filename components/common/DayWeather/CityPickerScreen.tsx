@@ -16,7 +16,7 @@ import {
 } from "@mantine/core";
 import { IconMapPin, IconSearch } from "@tabler/icons-react";
 
-import { useCitySearch } from "../../hooks/useCitySearch";
+import { useCitySearch } from "@/hooks/useCitySearch";
 import type { CityApplyScope, CityCandidate } from "./types";
 import classes from "./DayWeather.module.css";
 

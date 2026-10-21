@@ -27,7 +27,7 @@ import type { Lodging, PlaceResult, Trip } from "@/types";
 import { diffDays } from "@/lib/date";
 import { MEMO_MAX_LENGTH } from "@/constants/trip";
 import { NEARBY_SEARCH_RADIUS_KM } from "@/constants/search";
-import { usePlaceSearch } from "../../hooks/usePlaceSearch";
+import { usePlaceSearch } from "@/hooks/usePlaceSearch";
 import { PanelSubScreen } from "../PanelSubScreen";
 import classes from "./LodgingForm.module.css";
 

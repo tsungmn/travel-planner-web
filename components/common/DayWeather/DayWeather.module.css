@@ -26,6 +26,22 @@
   height: 20px;
 }
 
+.normalInline {
+  color: var(--mantine-color-gray-5);
+}
+
+.normalBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 6px;
+  border: 1px solid var(--mantine-color-gray-3);
+  border-radius: 999px;
+  color: var(--mantine-color-gray-6);
+  font-size: 10px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
 .inlineCity {
   white-space: nowrap;
   flex: 0 0 auto;
@@ -85,6 +101,20 @@
   border-color: var(--mantine-color-gray-3);
 }
 
+.cardNormalIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: var(--mantine-color-gray-0);
+  color: var(--mantine-color-gray-5);
+  font-size: 10px;
+  font-weight: 700;
+}
+
 .cardIcon {
   display: inline-flex;
   align-items: center;
@@ -101,6 +131,83 @@
 .cardBody {
   min-width: 0;
   flex: 1 1 auto;
+}
+
+.cardDetails {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 8px;
+  word-break: keep-all;
+}
+
+.rainDetail {
+  color: var(--mantine-color-blue-7);
+}
+
+.normalRain {
+  color: var(--mantine-color-blue-6);
+}
+
+.summary {
+  padding: 12px;
+  border: 1px solid var(--mantine-color-gray-2);
+  border-radius: 10px;
+  background: var(--mantine-color-gray-0);
+  word-break: keep-all;
+}
+
+.summaryReserved {
+  height: 88px;
+  border-radius: 10px;
+  background: var(--mantine-color-gray-0);
+}
+
+.summaryState {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--mantine-color-gray-2);
+  border-radius: 10px;
+  word-break: keep-all;
+}
+
+.summaryAction {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex: 0 0 auto;
+  border: 0;
+  background: transparent;
+  color: var(--mantine-primary-color-filled);
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.summaryTemperature {
+  white-space: nowrap;
+}
+
+.summaryGuide {
+  line-height: 1.45;
+}
+
+.hintChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 100%;
+  padding: 4px 8px;
+  border: 1px solid var(--mantine-color-gray-3);
+  border-radius: 999px;
+  background: var(--mantine-color-white);
+  color: var(--mantine-color-gray-7);
+  font-size: 11px;
+  white-space: normal;
 }
 
 .cardLabel {

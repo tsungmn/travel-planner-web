@@ -33,14 +33,14 @@ import type {
   Trip,
   TripArea,
 } from "@/types";
-import type { PlaceSearchError } from "../../hooks/usePlaceSearch";
+import type { PlaceSearchError } from "@/hooks/usePlaceSearch";
 import { areaBounds, areaTitle, isInArea } from "@/lib/areas";
 import { formatDayDate } from "@/lib/date";
 import { formatDistance } from "@/lib/geo";
 import { getDayColor } from "@/lib/dayColor";
 import { findLodgingFor } from "@/lib/lodging";
 import { NEARBY_SEARCH_RADIUS_KM } from "@/constants/search";
-import { usePlaceSearch } from "../../hooks/usePlaceSearch";
+import { usePlaceSearch } from "@/hooks/usePlaceSearch";
 import classes from "./PlaceSearch.module.css";
 
 /** "현 지도에서 검색" 버튼이 지도와 주고받는 정보. */
