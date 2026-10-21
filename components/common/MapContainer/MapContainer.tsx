@@ -13,6 +13,7 @@ import type { MapProps, MapRef } from "react-map-gl/maplibre";
 import type { ReactNode, Ref } from "react";
 
 import type { StyleTransform } from "@/lib/transformStyle";
+import { KoreaBoundaryPatch } from "@/components/common/KoreaBoundaryPatch";
 import { useMapStyle } from "@/hooks/useMapStyle";
 import {
   DEFAULT_MAP_STYLE,
@@ -79,6 +80,7 @@ export function MapContainer({
         style={{ width: "100%", height: "100%" }}
         attributionControl={false}
       >
+        <KoreaBoundaryPatch />
         {showScale && <ScaleControl position="bottom-right" />}
         {showNavigation && <NavigationControl position="bottom-right" />}
         {showGeolocate && (

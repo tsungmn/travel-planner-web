@@ -1,0 +1,351 @@
+/* ---------- Screen-reader only ---------- */
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ---------- Inline (all-days list header) ---------- */
+.inline {
+  position: relative;
+  display: inline-flex;
+  flex: 0 0 auto;
+  min-width: 0;
+  color: var(--mantine-color-gray-7);
+}
+
+.inlineReserved {
+  display: inline-block;
+  width: 1px;
+  height: 20px;
+}
+
+.normalInline {
+  color: var(--mantine-color-gray-5);
+}
+
+.normalBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 6px;
+  border: 1px solid var(--mantine-color-gray-3);
+  border-radius: 999px;
+  color: var(--mantine-color-gray-6);
+  font-size: 10px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.inlineCity {
+  white-space: nowrap;
+  flex: 0 0 auto;
+  padding-right: 6px;
+  border-right: 1px solid var(--mantine-color-gray-3);
+  margin-right: 2px;
+}
+
+.iconWrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  line-height: 0;
+  color: var(--mantine-color-gray-7);
+}
+
+.tempMin {
+  color: var(--mantine-color-gray-6);
+  font-variant-numeric: tabular-nums;
+}
+
+.tempSep {
+  color: var(--mantine-color-gray-4);
+}
+
+.tempMax {
+  color: var(--mantine-color-gray-8);
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.precip {
+  color: var(--mantine-color-blue-6);
+  flex: 0 0 auto;
+}
+
+.uncertainDot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--mantine-color-yellow-8);
+  flex: 0 0 auto;
+}
+
+/* ---------- Card (per-day panel) ---------- */
+.card {
+  background: var(--mantine-color-white);
+  border: 1px solid var(--mantine-color-gray-2);
+  border-radius: 10px;
+  padding: 10px 12px;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+}
+
+.cardTransit {
+  border-style: dashed;
+  border-color: var(--mantine-color-gray-3);
+}
+
+.cardNormalIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: var(--mantine-color-gray-0);
+  color: var(--mantine-color-gray-5);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.cardIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: var(--mantine-color-gray-0);
+  color: var(--mantine-color-gray-7);
+  line-height: 0;
+}
+
+.cardBody {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.cardDetails {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 8px;
+  word-break: keep-all;
+}
+
+.rainDetail {
+  color: var(--mantine-color-blue-7);
+}
+
+.normalRain {
+  color: var(--mantine-color-blue-6);
+}
+
+.summary {
+  padding: 12px;
+  border: 1px solid var(--mantine-color-gray-2);
+  border-radius: 10px;
+  background: var(--mantine-color-gray-0);
+  word-break: keep-all;
+}
+
+.summaryReserved {
+  height: 88px;
+  border-radius: 10px;
+  background: var(--mantine-color-gray-0);
+}
+
+.summaryState {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--mantine-color-gray-2);
+  border-radius: 10px;
+  word-break: keep-all;
+}
+
+.summaryAction {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex: 0 0 auto;
+  border: 0;
+  background: transparent;
+  color: var(--mantine-primary-color-filled);
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.summaryTemperature {
+  white-space: nowrap;
+}
+
+.summaryGuide {
+  line-height: 1.45;
+}
+
+.hintChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 100%;
+  padding: 4px 8px;
+  border: 1px solid var(--mantine-color-gray-3);
+  border-radius: 999px;
+  background: var(--mantine-color-white);
+  color: var(--mantine-color-gray-7);
+  font-size: 11px;
+  white-space: normal;
+}
+
+.cardLabel {
+  line-height: 1.2;
+}
+
+.cardTempMin {
+  color: var(--mantine-color-gray-5);
+  font-size: 16px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+.cardTempSep {
+  color: var(--mantine-color-gray-3);
+  margin: 0 2px;
+  font-size: 14px;
+}
+
+.cardTempMax {
+  color: var(--mantine-color-gray-9);
+  font-size: 18px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.cardTempUnit {
+  line-height: 1;
+}
+
+.cardPrecipLow {
+  color: var(--mantine-color-gray-6);
+}
+
+.cardPrecipHigh {
+  color: var(--mantine-color-blue-6);
+}
+
+.cardCityRow {
+  border-top: 1px solid var(--mantine-color-gray-1);
+  padding-top: 6px;
+}
+
+.cardCity {
+  color: var(--mantine-color-gray-7);
+}
+
+.cityBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--mantine-color-teal-0);
+  color: var(--mantine-color-teal-8);
+  border: 1px solid var(--mantine-color-teal-2);
+  font-size: 10px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.cityEditBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--mantine-color-gray-2);
+  background: var(--mantine-color-white);
+  color: var(--mantine-color-gray-7);
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease,
+    color 120ms ease;
+}
+
+.cityEditBtn:hover {
+  background: var(--mantine-color-gray-0);
+  border-color: var(--mantine-color-gray-3);
+  color: var(--mantine-color-gray-9);
+}
+
+.cityEditBtn:focus-visible {
+  outline: 2px solid var(--mantine-color-blue-4);
+  outline-offset: 1px;
+}
+
+.uncertainPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--mantine-color-yellow-0);
+  color: var(--mantine-color-yellow-9);
+  border: 1px solid var(--mantine-color-yellow-3);
+  font-size: 10px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* ---------- Transit pair ---------- */
+.transitPair {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.transitArrow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  color: var(--mantine-color-gray-4);
+  align-self: center;
+}
+
+/* ---------- City picker results ---------- */
+.cityResult {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  color: var(--mantine-color-gray-7);
+  transition: background-color 120ms ease;
+  text-align: left;
+}
+
+.cityResult:hover {
+  background: var(--mantine-color-gray-0);
+}
+
+.cityResult:focus-visible {
+  outline: 2px solid var(--mantine-color-blue-4);
+  outline-offset: 1px;
+}

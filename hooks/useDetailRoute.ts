@@ -4,7 +4,8 @@ import { usePathname, useSearchParams } from "next/navigation";
 
 import type { Flight, TripMode } from "@/types";
 
-export type DetailView = "search" | "flight" | "lodging" | "trip-edit";
+export type DetailView =
+  "search" | "flight" | "lodging" | "trip-edit" | "weather-city";
 export type FlightDirection = Flight["direction"];
 
 const VIEWS: readonly DetailView[] = [
@@ -12,6 +13,7 @@ const VIEWS: readonly DetailView[] = [
   "flight",
   "lodging",
   "trip-edit",
+  "weather-city",
 ];
 
 /** openView가 push한 history 항목임을 표시합니다. (닫을 때 history.back() 할지 판단) */

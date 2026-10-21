@@ -9,6 +9,7 @@ import {
   useState,
 } from "react";
 import { notFound, useRouter } from "next/navigation";
+
 import { Box, Button, Group, Text } from "@mantine/core";
 import { useElementSize, useMediaQuery } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
@@ -25,7 +26,12 @@ import type {
   TripArea,
   TripMode,
 } from "@/types";
+
+import { MAX_AREAS_PER_TRIP } from "@/constants/area";
+import { MAX_FLIGHTS_PER_TRIP, MAX_TRIP_DAYS } from "@/constants/trip";
+
 import {
+  clearDayCities,
   createArea,
   createFlight,
   createLodging,
@@ -38,8 +44,10 @@ import {
   disableShare,
   enableShare,
   getTrip,
+  getTripWeather,
   getUser,
   reorderStops,
+  setDayCities,
   updateArea,
   updateFlight,
   updateLodging,
@@ -48,7 +56,6 @@ import {
   type AreaInput,
   type UserInfo,
 } from "@/lib/api";
-import { ApiError } from "@/lib/http";
 import { useAirports } from "@/lib/airports";
 import {
   areaBounds,
@@ -56,41 +63,52 @@ import {
   conflictingDays,
   isInArea,
 } from "@/lib/areas";
+import { addDays } from "@/lib/date";
+import { ApiError } from "@/lib/http";
 import {
   buildFlightStops,
   isAirportMarkerId,
   type FlightStop,
 } from "@/lib/flightStops";
-import { Header } from "@/components/common/Header";
-import { MAX_AREAS_PER_TRIP } from "@/constants/area";
-import { MAX_FLIGHTS_PER_TRIP, MAX_TRIP_DAYS } from "@/constants/trip";
-import classes from "./TripDetail.module.css";
-import { useDetailRoute } from "./hooks/useDetailRoute";
-import { usePlaceSearch } from "./hooks/usePlaceSearch";
+import { isTripEnded, weatherSignature } from "@/lib/weather";
+
 import {
-  getSheetHeight,
   useBottomSheet,
+  getSheetHeight,
   type SheetSnap,
-} from "./hooks/useBottomSheet";
-import { DetailLoading, DetailMessage } from "./modules/DetailState";
-import {
-  FINDER_MAX_PINNED,
-  FINDER_MAX_RESULTS,
-  PlaceFinder,
-} from "./modules/PlaceFinder";
-import { SubScreen } from "./modules/SubScreen";
-import type { AreaEditControl } from "./modules/AreaLayer";
-import type { AreaPatch } from "./modules/AreaSection/AreaEditor";
+} from "@/hooks/useBottomSheet";
+import { useDetailRoute } from "@/hooks/useDetailRoute";
+import { useDevWeatherScenario } from "@/hooks/useDevWeatherScenario";
+import { usePlaceSearch } from "@/hooks/usePlaceSearch";
+import { useTripWeather } from "@/hooks/useTripWeather";
+
+import { AreaEditControl, AreaLayer } from "@/components/common/AreaLayer";
+import { DetailLoading, DetailMessage } from "@/components/common/DetailState";
+import { Header } from "@/components/common/Header";
 import {
   TripMap,
   type FitTarget,
   type FlyTarget,
   type MapInsets,
-} from "./modules/TripMap";
+} from "@/components/common/TripMap";
+import {
+  type CityApplyScope,
+  type CityCandidate,
+} from "@/components/common/DayWeather/types";
+
+import {
+  PlaceFinder,
+  FINDER_MAX_PINNED,
+  FINDER_MAX_RESULTS,
+} from "./modules/PlaceFinder";
+import { SubScreen } from "./modules/SubScreen";
 import { TripPanel, type SaveStatus } from "./modules/TripPanel";
+import type { AreaPatch } from "./modules/AreaSection/AreaEditor";
 import type { FlightFormData } from "./modules/FlightForm";
 import type { LodgingFormData } from "./modules/LodgingForm";
 import type { TripEditFormData } from "./modules/TripEditForm";
+
+import classes from "./TripDetail.module.css";
 
 type TripData = {
   trip: Trip;
@@ -423,6 +441,26 @@ function TripDetailContent({ id }: { id: string }) {
         : [],
     [data, airportIndex],
   );
+
+  // 일차별 날씨. 날씨 기준 위치가 달라질 수 있는 변경이 있을 때만 다시 받습니다.
+  const loadWeather = useCallback(
+    (signal: AbortSignal) => getTripWeather(id, signal),
+    [id],
+  );
+  // 사용자가 날씨 도시를 정하거나 되돌리면 올려서 날씨를 다시 받게 합니다.
+  // (서버에만 저장되는 값이라 weatherSignature에는 잡히지 않습니다)
+  const [cityVersion, setCityVersion] = useState(0);
+  const weatherKey = useMemo(
+    () =>
+      data && !isTripEnded(data.trip.end_date)
+        ? `${weatherSignature(data)}#${cityVersion}`
+        : null,
+    [data, cityVersion],
+  );
+  // 개발 전용(운영 빌드에서는 mock도 선택 UI도 없음). 만들기 어려운 날씨 상태를 볼 때 씁니다.
+  const { mock: mockWeather, picker: weatherScenarioPicker } =
+    useDevWeatherScenario(data?.trip);
+  const weather = useTripWeather(loadWeather, weatherKey, mockWeather);
 
   // ----- 화면 상태 계산 -----
 
@@ -1042,6 +1080,29 @@ function TripDetailContent({ id }: { id: string }) {
     notifications.show({ message: "여행을 삭제했어요.", color: "teal" });
   }
 
+  // 창에서 고른 일차는 1부터, 서버는 0부터 셉니다.
+  async function handleApplyWeatherCity(
+    city: CityCandidate,
+    scope: CityApplyScope,
+  ) {
+    await setDayCities(id, {
+      fromDay: scope.fromDay - 1,
+      toDay: scope.toDay - 1,
+      city,
+    });
+    setCityVersion((v) => v + 1);
+    notifications.show({ message: "날씨 도시를 저장했어요.", color: "teal" });
+  }
+
+  async function handleResetWeatherCity(scope: CityApplyScope) {
+    await clearDayCities(id, scope.fromDay - 1, scope.toDay - 1);
+    setCityVersion((v) => v + 1);
+    notifications.show({
+      message: "날씨 도시를 자동 추정으로 되돌렸어요.",
+      color: "teal",
+    });
+  }
+
   async function handleSaveTripEdit(values: TripEditFormData) {
     if (formBusy.current) return;
     formBusy.current = true;
@@ -1136,6 +1197,7 @@ function TripDetailContent({ id }: { id: string }) {
             </button>
           )}
           <Box className={classes.panelBody}>
+            {weatherScenarioPicker}
             {/* 서브 화면이 위에 덮여도 스크롤 위치와 입력 상태가 유지되도록 계속 마운트해 둡니다. */}
             <Box className={classes.panelMain} inert={!!subView}>
               <TripPanel
@@ -1152,6 +1214,10 @@ function TripDetailContent({ id }: { id: string }) {
                 addAreaMode={areaAddMode}
                 selectedDay={selectedDay}
                 saveStatus={saveStatus}
+                weather={weather}
+                onEditWeatherCity={(day) =>
+                  route.openView("weather-city", { day })
+                }
                 expandedStopId={expandedStopId}
                 hoveredStopId={hoveredId}
                 highlightedStopId={newStopId}
@@ -1211,6 +1277,20 @@ function TripDetailContent({ id }: { id: string }) {
                   onDeleteLodging={handleDeleteLodging}
                   onSaveTripEdit={handleSaveTripEdit}
                   onGoToDay={route.closeViewToDay}
+                  weatherCity={
+                    subView === "weather-city" && selectedDay !== null
+                      ? {
+                          dayIndex: selectedDay + 1,
+                          totalDays: trip.num_days,
+                          canReset:
+                            weather.byDate.get(
+                              addDays(trip.start_date, selectedDay),
+                            )?.placeSource === "user",
+                          onApply: handleApplyWeatherCity,
+                          onReset: handleResetWeatherCity,
+                        }
+                      : undefined
+                  }
                   pickMode={pickMode}
                   onPickModeChange={handlePickModeChange}
                   mapSearch={{

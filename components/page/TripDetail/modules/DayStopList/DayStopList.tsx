@@ -25,8 +25,8 @@ import { getDayColor } from "@/lib/dayColor";
 import { numberStops } from "@/lib/lodging";
 import { ALIAS_MAX_LENGTH, MEMO_MAX_LENGTH } from "@/constants/trip";
 import { type DayFlightStops, type FlightStop } from "@/lib/flightStops";
-import { AirportStopGroup } from "../AirportStopRow";
-import { DistanceSeparator } from "../DistanceSeparator";
+import { AirportStopGroup } from "@/components/common/AirportStopRow";
+import { DistanceSeparator } from "@/components/common/DistanceSeparator";
 
 export function DayStopList({
   trip,

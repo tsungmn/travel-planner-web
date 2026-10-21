@@ -17,8 +17,8 @@ import type { Lodging, SharedStop } from "@/types";
 import { getDayColor } from "@/lib/dayColor";
 import { isHiddenStop, numberStops } from "@/lib/lodging";
 import type { DayFlightStops, FlightStop } from "@/lib/flightStops";
-import { AirportStopGroup } from "@/components/page/TripDetail/modules/AirportStopRow";
-import { DistanceSeparator } from "@/components/page/TripDetail/modules/DistanceSeparator";
+import { AirportStopGroup } from "@/components/common/AirportStopRow";
+import { DistanceSeparator } from "@/components/common/DistanceSeparator";
 import classes from "./ReadOnlyStopList.module.css";
 
 type ReadOnlyStopListProps = {

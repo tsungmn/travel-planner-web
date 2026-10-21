@@ -23,28 +23,25 @@ import type {
   TripArea,
   TripPublic,
 } from "@/types";
-import { getSharedTrip } from "@/lib/api";
+import { getSharedTrip, getSharedTripWeather } from "@/lib/api";
+import { useDevWeatherScenario } from "@/components/page/TripDetail/hooks/useDevWeatherScenario";
+import { useTripWeather } from "@/hooks/useTripWeather";
 import { isHiddenStop } from "@/lib/lodging";
+import { isTripEnded } from "@/lib/weather";
 import { useAirports } from "@/lib/airports";
 import {
   buildFlightStops,
   isAirportMarkerId,
   type FlightStop,
 } from "@/lib/flightStops";
-import {
-  getSheetHeight,
-  useBottomSheet,
-} from "@/components/page/TripDetail/hooks/useBottomSheet";
-import { useDetailRoute } from "@/components/page/TripDetail/hooks/useDetailRoute";
-import {
-  DetailLoading,
-  DetailMessage,
-} from "@/components/page/TripDetail/modules/DetailState";
+import { getSheetHeight, useBottomSheet } from "@/hooks/useBottomSheet";
+import { useDetailRoute } from "@/hooks/useDetailRoute";
+import { DetailLoading, DetailMessage } from "@/components/common/DetailState";
 import {
   TripMap,
   type FlyTarget,
   type MapInsets,
-} from "@/components/page/TripDetail/modules/TripMap";
+} from "@/components/common/TripMap";
 import { SharePanel } from "./modules/SharePanel";
 import { ShareTopBar } from "./modules/ShareTopBar";
 import classes from "./SharedTrip.module.css";
@@ -159,6 +156,20 @@ function SharedTripContent({ token }: { token: string }) {
     [data, airportIndex],
   );
 
+  // 일차별 날씨. 공유 화면의 일정은 바뀌지 않으니 여행을 불러온 뒤 한 번만 받습니다.
+  const loadWeather = useCallback(
+    (signal: AbortSignal) => getSharedTripWeather(token, signal),
+    [token],
+  );
+  // 개발 전용(운영 빌드에서는 mock도 선택 UI도 없음). 만들기 어려운 날씨 상태를 볼 때 씁니다.
+  const { mock: mockWeather, picker: weatherScenarioPicker } =
+    useDevWeatherScenario(data?.trip);
+  const weather = useTripWeather(
+    loadWeather,
+    data && !isTripEnded(data.trip.end_date) ? token : null,
+    mockWeather,
+  );
+
   // ----- 화면 상태 계산 -----
 
   const selectedDay =
@@ -253,6 +264,7 @@ function SharedTripContent({ token }: { token: string }) {
             <span />
           </button>
           <Box className={classes.panelBody}>
+            {weatherScenarioPicker}
             <SharePanel
               trip={trip}
               share={share}
@@ -260,6 +272,7 @@ function SharedTripContent({ token }: { token: string }) {
               lodgings={lodgings}
               flights={flights}
               flightStops={flightStops}
+              weather={weather}
               selectedDay={selectedDay}
               expandedStopId={expandedStopId}
               hoveredStopId={hoveredId}

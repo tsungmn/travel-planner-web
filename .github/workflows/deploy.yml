@@ -5,7 +5,7 @@ name: build-and-deploy
 #   → ArgoCD 가 자동으로 서버에 배포한다. main 병합은 서버 앞에서 확인할 수 있을 때 하세요.
 on:
   push:
-    branches: ["**"]
+    branches: ["main"]
 
 concurrency:
   group: web-${{ github.ref }}

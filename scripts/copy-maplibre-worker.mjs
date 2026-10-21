@@ -17,8 +17,9 @@ mkdirSync(publicDir, { recursive: true });
 
 // 워커(maplibre-gl-worker.mjs)가 옆에 있는 maplibre-gl-shared.mjs 같은
 // 청크를 런타임에 import하므로 maplibre-gl-*.mjs를 전부 복사한다.
+// 브라우저가 요청하는 소스맵(.mjs.map)도 함께 복사한다.
 const files = readdirSync(distDir).filter((name) =>
-  /^maplibre-gl-.+\.mjs$/.test(name),
+  /^maplibre-gl-.+\.mjs(\.map)?$/.test(name),
 );
 
 if (!files.includes("maplibre-gl-worker.mjs")) {

@@ -16,7 +16,7 @@ import { Marker } from "react-map-gl/maplibre";
 import { IconCheck, IconMapPin, IconSearch, IconX } from "@tabler/icons-react";
 
 import type { PlaceResult } from "@/types";
-import type { SearchStatus } from "../../hooks/useDestinationSearch";
+import type { SearchStatus } from "@/hooks/useDestinationSearch";
 import classes from "./DestinationStep.module.css";
 
 const MapContainer = dynamic(() => import("@/components/common/MapContainer"), {

@@ -29,7 +29,7 @@ import { ApiError } from "@/lib/http";
 import { inclusiveDays, todayLocal } from "@/lib/date";
 import { Header } from "@/components/common/Header";
 import { MAX_TRIP_DAYS, TRIP_TITLE_MAX_LENGTH } from "@/constants/trip";
-import { useDestinationSearch } from "./hooks/useDestinationSearch";
+import { useDestinationSearch } from "@/hooks/useDestinationSearch";
 import { DestinationStep } from "./modules/DestinationStep";
 import { DateStep, type DateRange } from "./modules/DateStep";
 import classes from "./TripNew.module.css";

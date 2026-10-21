@@ -1,5 +1,6 @@
 import type { Ref } from "react";
 import Link from "next/link";
+
 import {
   Box,
   Button,
@@ -27,21 +28,29 @@ import type {
   TripArea,
   TripMode,
 } from "@/types";
-import { formatPeriod } from "@/lib/date";
+
+import { addDays, formatPeriod } from "@/lib/date";
 import {
   EMPTY_DAY_FLIGHT_STOPS,
   flightStopsOfDay,
   type FlightStop,
 } from "@/lib/flightStops";
-import { AllDaysList } from "../AllDaysList";
+
+import type { TripWeatherState } from "@/hooks/useTripWeather";
+
+import { AllDaysList } from "@/components/common/AllDaysList";
+import { DayTabs } from "@/components/common/DayTabs";
+import { DayWeatherSlot } from "@/components/common/DayWeather/DayWeatherSlot";
+import { WeatherAttribution } from "@/components/common/DayWeather/WeatherAttribution";
+import { FlightSection } from "@/components/common/FlightSection";
+import { LodgingSection } from "@/components/common/LodgingSection";
+
 import { AreaSection } from "../AreaSection";
 import type { AreaPatch } from "../AreaSection/AreaEditor";
 import { DayStopList } from "../DayStopList";
-import { DayTabs } from "../DayTabs";
-import { FlightSection } from "../FlightSection";
-import { LodgingSection } from "../LodgingSection";
 import { ModeSwitch } from "../ModeSwitch";
 import { TripHeaderActions } from "../TripHeaderActions";
+
 import classes from "./TripPanel.module.css";
 
 export type SaveStatus = "saved" | "saving" | "error";
@@ -62,6 +71,10 @@ type TripPanelProps = {
   addAreaMode: boolean;
   selectedDay: number | null;
   saveStatus: SaveStatus;
+  /** 일차별 날씨 */
+  weather: TripWeatherState;
+  /** 선택한 일차의 날씨 도시 바꾸기. day는 0부터 시작합니다. */
+  onEditWeatherCity: (day: number) => void;
   expandedStopId: string | null;
   hoveredStopId: string | null;
   highlightedStopId: string | null;
@@ -111,6 +124,8 @@ export function TripPanel({
   addAreaMode,
   selectedDay,
   saveStatus,
+  weather,
+  onEditWeatherCity,
   expandedStopId,
   hoveredStopId,
   highlightedStopId,
@@ -275,9 +290,18 @@ export function TripPanel({
           />
         ) : (
           <>
+            {selectedDay !== null && (
+              <DayWeatherSlot
+                weather={weather.byDate.get(
+                  addDays(trip.start_date, selectedDay),
+                )}
+                onEditCity={() => onEditWeatherCity(selectedDay)}
+              />
+            )}
             <Box ref={listRef}>
               {selectedDay === null ? (
                 <AllDaysList
+                  weather={weather}
                   trip={trip}
                   stops={stops}
                   lodgings={lodgings}
@@ -285,6 +309,7 @@ export function TripPanel({
                   hoveredStopId={hoveredStopId}
                   onHoverStop={onHoverStop}
                   onSelect={onSelectDay}
+                  onPickCity={() => onEditWeatherCity(0)}
                 />
               ) : (
                 <DayStopList
@@ -316,6 +341,7 @@ export function TripPanel({
             >
               장소 추가
             </Button>
+            <WeatherAttribution attribution={weather.attribution} />
           </>
         )}
       </Stack>

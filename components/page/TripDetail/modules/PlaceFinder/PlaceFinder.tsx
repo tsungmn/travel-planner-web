@@ -6,7 +6,7 @@ import {
   Group,
   Loader,
   Paper,
-  ScrollArea,
+  ScrollAreaAutosize,
   Switch,
   Text,
   TextInput,
@@ -26,7 +26,7 @@ import {
 
 import type { PlaceResult } from "@/types";
 import { NEARBY_SEARCH_RADIUS_KM } from "@/constants/search";
-import type { PlaceSearchError } from "../../hooks/usePlaceSearch";
+import type { PlaceSearchError } from "@/hooks/usePlaceSearch";
 import classes from "./PlaceFinder.module.css";
 
 /** 지도에 마커로 보여 주는 결과 개수. 목록의 번호와 마커의 번호가 같습니다. */
@@ -199,7 +199,7 @@ export function PlaceFinder({
             </Text>
           </Group>
 
-          <ScrollArea.Autosize mah="min(40dvh, 18rem)" aria-live="polite">
+          <ScrollAreaAutosize mah="min(40dvh, 18rem)" aria-live="polite">
             {error ? (
               <Group gap="xs" className={classes.message} role="alert">
                 <IconAlertCircle size={16} aria-hidden="true" />
@@ -281,7 +281,7 @@ export function PlaceFinder({
                 Enter 키를 눌러 검색해 주세요
               </Text>
             ) : null}
-          </ScrollArea.Autosize>
+          </ScrollAreaAutosize>
         </div>
       )}
 

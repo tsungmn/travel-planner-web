@@ -6,7 +6,12 @@ import type {
   Trip,
   TripArea,
 } from "@/types";
-import type { DetailView } from "../../hooks/useDetailRoute";
+import type { DetailView } from "@/hooks/useDetailRoute";
+import { CityPickerScreen } from "@/components/common/DayWeather/CityPickerScreen";
+import type {
+  CityApplyScope,
+  CityCandidate,
+} from "@/components/common/DayWeather/types";
 import { FlightForm, type FlightFormData } from "../FlightForm";
 import { LodgingForm, type LodgingFormData } from "../LodgingForm";
 import { PanelSubScreen } from "../PanelSubScreen";
@@ -19,6 +24,14 @@ type SubScreenProps = {
   direction: Flight["direction"] | null;
   /** `?id=` : 수정할 항공편/숙소, 장소 검색에서는 검색 범위로 쓸 영역 */
   targetId: string | null;
+  /** 날씨 도시 선택 화면에 필요한 일차 정보 */
+  weatherCity?: {
+    dayIndex: number;
+    totalDays: number;
+    canReset: boolean;
+    onApply: (city: CityCandidate, scope: CityApplyScope) => Promise<void>;
+    onReset: (scope: CityApplyScope) => Promise<void>;
+  };
   trip: Trip;
   stops: Stop[];
   lodgings: Lodging[];
@@ -50,6 +63,14 @@ type SubScreenProps = {
 /** `?view=` 값에 맞는 패널 서브 화면을 그립니다. */
 export function SubScreen(props: SubScreenProps) {
   const { view, trip, stops, flights, lodgings, onClose } = props;
+
+  if (view === "weather-city" && props.weatherCity) {
+    return (
+      <PanelSubScreen title="날씨 도시 바꾸기" onBack={onClose}>
+        <CityPickerScreen {...props.weatherCity} onBack={onClose} />
+      </PanelSubScreen>
+    );
+  }
 
   if (view === "search") {
     const area = props.areas.find((a) => a.id === props.targetId) ?? null;
