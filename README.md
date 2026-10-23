@@ -67,7 +67,7 @@
 ### 설치
 
 ```bash
-git clone https://github.com/tsungmn/travel-planner-web.git
+git clone https://github.com/tsungmnli/travel-planner-web.git
 cd travel-planner-web
 npm install
 ```
